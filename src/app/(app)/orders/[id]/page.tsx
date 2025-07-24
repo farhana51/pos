@@ -120,21 +120,21 @@ function AddItemDialog({ onAddItem, orderId }: { onAddItem: (item: OrderItem) =>
 }
 
 function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void }) {
-  const total = items.reduce((sum, item) => {
+  const subtotal = items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
   }, 0);
 
   const totalVat = items.reduce((sum, item) => {
-      if (item.menuItem.vatRate === 20) {
-          const itemTotal = item.menuItem.price * item.quantity;
-          const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-          return sum + ((itemTotal + addonsTotal) * 0.2);
+      const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+      const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+      if (item.menuItem.vatRate > 0) {
+          return sum + (itemTotal * (item.menuItem.vatRate / 100));
       }
       return sum;
   }, 0);
 
-  const grandTotal = total + totalVat;
+  const grandTotal = subtotal + totalVat;
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
       const updatedItems = [...items];
@@ -186,14 +186,14 @@ function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdat
             ))}
             <TableRow className="font-semibold bg-muted/30">
               <TableCell colSpan={3}>Subtotal</TableCell>
-              <TableCell className="text-right">£{total.toFixed(2)}</TableCell>
+              <TableCell className="text-right">£{subtotal.toFixed(2)}</TableCell>
             </TableRow>
              <TableRow className="font-semibold bg-muted/30">
-              <TableCell colSpan={3}>VAT</TableCell>
+              <TableCell colSpan={3}>VAT ({items.find(i => i.menuItem.vatRate > 0)?.menuItem.vatRate || 0}%)</TableCell>
               <TableCell className="text-right">£{totalVat.toFixed(2)}</TableCell>
             </TableRow>
             <TableRow className="font-bold text-lg bg-muted/50">
-              <TableCell colSpan={3}>Total</TableCell>
+              <TableCell colSpan={3}>Grand Total</TableCell>
               <TableCell className="text-right">£{grandTotal.toFixed(2)}</TableCell>
             </TableRow>
           </TableBody>
@@ -232,10 +232,10 @@ function BillSplittingDialog({ items }: { items: OrderItem[] }) {
             return sum + (item.menuItem.price + addonsTotal) * item.quantity;
         }, 0);
         const vat = billItems.reduce((sum, item) => {
-            if (item.menuItem.vatRate === 20) {
-                 const itemTotal = item.menuItem.price * item.quantity;
-                const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-                return sum + ((itemTotal + addonsTotal) * 0.2);
+             const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+            const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+            if (item.menuItem.vatRate > 0) {
+                return sum + (itemTotal * (item.menuItem.vatRate / 100));
             }
             return sum;
         }, 0);
@@ -440,21 +440,21 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
     router.push('/dashboard');
   }
 
- const total = order.items.reduce((sum, item) => {
+ const subtotal = order.items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
   }, 0);
 
   const totalVat = order.items.reduce((sum, item) => {
-      if (item.menuItem.vatRate === 20) {
-          const itemTotal = item.menuItem.price * item.quantity;
-          const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-          return sum + ((itemTotal + addonsTotal) * 0.2);
+      const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+      const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+      if (item.menuItem.vatRate > 0) {
+          return sum + (itemTotal * (item.menuItem.vatRate / 100));
       }
       return sum;
   }, 0);
 
-  const grandTotal = total + totalVat;
+  const grandTotal = subtotal + totalVat;
 
 
   return (
@@ -509,5 +509,3 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
 
 // Wrapping with withAuth HOC and specifying required roles
 export default withAuth(OrderDetailsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
-
-    

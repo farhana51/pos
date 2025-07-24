@@ -50,7 +50,7 @@ export interface Order {
   type: 'Table' | 'Collection' | 'Delivery' | 'Online';
   createdAt: string;
   status: OrderStatus;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface Reservation {

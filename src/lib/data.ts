@@ -69,7 +69,7 @@ export const mockMenu: MenuItem[] = [
   { id: 4, name: 'Classic Margherita Pizza', description: 'Tomato, mozzarella, and fresh basil.', price: 14.00, category: 'Mains', vatRate: 20 },
   { id: 5, name: 'Chocolate Lava Cake', description: 'Molten chocolate center, served with vanilla bean ice cream.', price: 9.50, category: 'Desserts', vatRate: 20 },
   { id: 6, name: 'Old Fashioned', description: 'Whiskey, bitters, sugar, and an orange twist.', price: 11.00, category: 'Drinks', subcategory: 'Cocktails', vatRate: 20 },
-  { id: 7, name: 'Sparkling Water', description: 'San Pellegrino (750ml)', price: 4.50, category: 'Drinks', subcategory: 'Non-Alcoholic', vatRate: 20 },
+  { id: 7, name: 'Sparkling Water', description: 'San Pellegrino (750ml)', price: 4.50, category: 'Drinks', subcategory: 'Non-Alcoholic', vatRate: 0 },
   { id: 8, name: 'Fries', description: 'With truffle oil and parmesan.', price: 6.00, category: 'Sides', vatRate: 20 },
 ];
 

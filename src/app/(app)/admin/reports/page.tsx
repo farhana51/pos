@@ -14,15 +14,20 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, Tag, TrendingUp, Utensils, Wallet } from 'lucide-react';
 
 const calculateMetrics = () => {
-    const totalRevenue = mockOrders.reduce((acc, order) => acc + order.items.reduce((sum, item) => {
-        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-        const vat = item.menuItem.vatRate === 20 ? itemTotal * 0.2 : 0;
-        return sum + itemTotal + vat;
-    }, 0), 0);
+    const totalRevenue = mockOrders.reduce((acc, order) => {
+        if (order.status === 'Cancelled') return acc;
+        const orderTotal = order.items.reduce((sum, item) => {
+            const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+            const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+            const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
+            return sum + itemTotal + vat;
+        }, 0);
+        return acc + orderTotal;
+    }, 0);
 
-    const totalOrders = mockOrders.length;
-    const averageOrderValue = totalRevenue / totalOrders;
+    const paidOrders = mockOrders.filter(o => o.status === 'Paid');
+    const totalOrders = paidOrders.length;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     return { totalRevenue, totalOrders, averageOrderValue };
 };
@@ -30,14 +35,17 @@ const calculateMetrics = () => {
 const getSalesByCategory = () => {
     const categorySales: { [key: string]: number } = {};
     mockOrders.forEach(order => {
-        order.items.forEach(item => {
-            const category = item.menuItem.category;
-            const itemTotal = item.menuItem.price * item.quantity;
-            if (!categorySales[category]) {
-                categorySales[category] = 0;
-            }
-            categorySales[category] += itemTotal;
-        });
+        if (order.status === 'Paid') {
+            order.items.forEach(item => {
+                const category = item.menuItem.category;
+                const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+                const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+                if (!categorySales[category]) {
+                    categorySales[category] = 0;
+                }
+                categorySales[category] += itemTotal; // Calculating based on pre-VAT price
+            });
+        }
     });
     return Object.entries(categorySales).map(([name, sales]) => ({ name, sales }));
 }
@@ -178,7 +186,7 @@ function ReportsPage() {
                             const total = order.items.reduce((sum, item) => {
                                 const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
                                 const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-                                const vat = item.menuItem.vatRate === 20 ? itemTotal * 0.2 : 0;
+                                const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
                                 return sum + itemTotal + vat;
                             }, 0);
                             return (
@@ -188,7 +196,7 @@ function ReportsPage() {
                                     <TableCell>{format(new Date(order.createdAt), 'HH:mm')}</TableCell>
                                     <TableCell>
                                         <div className='flex items-center gap-2'>
-                                            {paymentMethodIcons[order.paymentMethod]}
+                                            {order.paymentMethod ? paymentMethodIcons[order.paymentMethod] : null}
                                             {order.paymentMethod}
                                         </div>
                                     </TableCell>
