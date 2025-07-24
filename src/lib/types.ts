@@ -78,3 +78,13 @@ export interface InventoryItem {
     unit: 'kg' | 'g' | 'liters' | 'ml' | 'pcs' | 'bottles';
     lowThreshold: number;
 }
+
+export interface Customer {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    totalOrders: number;
+    totalSpent: number;
+    lastVisit: string;
+}
