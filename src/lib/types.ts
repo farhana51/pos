@@ -55,3 +55,12 @@ export interface Reservation {
   status: 'Confirmed' | 'Pending' | 'Cancelled';
   notes?: string;
 }
+
+export interface TeamMember {
+  id: number;
+  name: string;
+  role: UserRole;
+  email: string;
+  status: 'Active' | 'Inactive';
+  avatarUrl: string;
+}

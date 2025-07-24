@@ -1,4 +1,4 @@
-import type { Table, MenuItem, Order, Reservation, User, UserRole } from './types';
+import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember } from './types';
 
 export const mockUser: User = {
   name: 'Alexandre',
@@ -28,6 +28,13 @@ export const hasPermission = (userRole: UserRole, requiredRoles: UserRole[]): bo
 
 
 // --- Mock Data ---
+
+export const mockTeam: TeamMember[] = [
+    { id: 1, name: 'Alice Johnson', role: 'Admin', email: 'alice@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 2, name: 'Bob Williams', role: 'Advanced', email: 'bob@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 3, name: 'Charlie Brown', role: 'Basic', email: 'charlie@example.com', status: 'Inactive', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 4, name: 'Diana Miller', role: 'Basic', email: 'diana@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
+];
 
 export const mockTables: Table[] = [
   { id: 1, capacity: 2, status: 'Occupied', orderId: 101 },

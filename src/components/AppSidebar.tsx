@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, ShieldBan, UserCheck } from "lucide-react"
+import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,7 @@ const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
+  { href: "/team", label: "Team", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },
 ]
