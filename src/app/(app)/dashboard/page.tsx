@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { MoreVertical, Users, CheckCircle, Clock, Ban, Utensils, AlertTriangle } from "lucide-react";
+import { MoreVertical, Users, CheckCircle, Clock, Ban, Utensils, AlertTriangle, Megaphone, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,27 @@ const statusConfig: Record<TableStatus, { icon: React.ElementType; color: string
   Reserved: { icon: Clock, color: "bg-purple-500", label: "Reserved", className: "border-purple-500/20 bg-purple-500/5 text-purple-700" },
   Dirty: { icon: AlertTriangle, color: "bg-yellow-500", label: "Needs Cleaning", className: "border-yellow-500/20 bg-yellow-500/5 text-yellow-700" },
 };
+
+function PromotionalBanner() {
+    return (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <div className="bg-primary/20 p-3 rounded-full">
+                    <Megaphone className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                    <h3 className="font-bold text-primary">Happy Hour Special!</h3>
+                    <p className="text-sm text-primary/80">50% off all cocktails from 5 PM to 7 PM. Encourage upsells!</p>
+                </div>
+            </div>
+             <Button variant="outline" asChild>
+                <Link href="/menu">
+                    View Cocktails <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+        </div>
+    );
+}
 
 function TableCard({ table }: { table: Table }) {
   const config = statusConfig[table.status];
@@ -73,6 +94,7 @@ export default function DashboardPage() {
     <>
       <PageHeader title="Table Dashboard" />
       <main className="p-4 sm:p-6 lg:p-8">
+        <PromotionalBanner />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {mockTables.map((table) => (
             <TableCard key={table.id} table={table} />
@@ -82,5 +104,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
