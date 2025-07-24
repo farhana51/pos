@@ -78,7 +78,9 @@ export const mockOrders: Order[] = [
     id: 101, 
     tableId: 1, 
     type: 'Table',
-    createdAt: new Date().toISOString(),
+    status: 'Paid',
+    paymentMethod: 'Card',
+    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     items: [
       { menuItem: mockMenu[0], quantity: 1, selectedAddons: [mockMenu[0].addons![1]] },
       { menuItem: mockMenu[5], quantity: 2 },
@@ -88,7 +90,9 @@ export const mockOrders: Order[] = [
     id: 102,
     tableId: 7,
     type: 'Table',
-    createdAt: new Date().toISOString(),
+    status: 'Paid',
+    paymentMethod: 'Cash',
+    createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     items: [
       { menuItem: mockMenu[3], quantity: 2, notes: 'One without basil' },
       { menuItem: mockMenu[6], quantity: 2 },
@@ -98,9 +102,38 @@ export const mockOrders: Order[] = [
     id: 103,
     tableId: 12,
     type: 'Table',
-    createdAt: new Date().toISOString(),
+    status: 'Paid',
+    paymentMethod: 'Card',
+    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     items: [
       { menuItem: mockMenu[2], quantity: 1 },
+      { menuItem: mockMenu[4], quantity: 1 },
+      { menuItem: mockMenu[7], quantity: 2 },
+    ]
+  },
+  {
+    id: 104,
+    tableId: 4,
+    type: 'Table',
+    status: 'Cancelled',
+    paymentMethod: 'Voucher',
+    createdAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
+    items: [
+      { menuItem: mockMenu[1], quantity: 2 },
+    ]
+  },
+  {
+    id: 105,
+    tableId: 6,
+    type: 'Table',
+    status: 'Paid',
+    paymentMethod: 'Card',
+    createdAt: new Date(Date.now() - 1000 * 60 * 125).toISOString(),
+    items: [
+      { menuItem: mockMenu[0], quantity: 1 },
+      { menuItem: mockMenu[1], quantity: 1 },
+      { menuItem: mockMenu[2], quantity: 1 },
+      { menuItem: mockMenu[3], quantity: 1 },
     ]
   }
 ];

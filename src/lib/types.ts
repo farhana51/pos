@@ -39,12 +39,18 @@ export interface OrderItem {
   selectedAddons?: Addon[];
 }
 
+export type PaymentMethod = 'Cash' | 'Card' | 'Voucher';
+export type OrderStatus = 'Paid' | 'Pending' | 'Cancelled';
+
+
 export interface Order {
   id: number;
   tableId: number;
   items: OrderItem[];
   type: 'Table' | 'Collection' | 'Delivery' | 'Online';
   createdAt: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
 }
 
 export interface Reservation {
