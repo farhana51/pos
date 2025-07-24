@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/components/withAuth';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const getOrderById = (id: number) => {
@@ -409,6 +410,28 @@ function PaymentDialog({ total }: { total: number }) {
     )
 }
 
+function CancelOrderDialog({ orderId, onCancel }: { orderId: number, onCancel: () => void }) {
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/20">Cancel Order</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently cancel order #{orderId} and all of its data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Back</AlertDialogCancel>
+                    <AlertDialogAction onClick={onCancel} className="bg-destructive hover:bg-destructive/90">Yes, Cancel Order</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 function OrderDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -432,6 +455,8 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
   }
   
   const handleCancelOrder = () => {
+    // In a real app, this would be a server action to update the order status
+    console.log(`Cancelling order #${order.id}`);
     toast({
       variant: "destructive",
       title: "Order Cancelled",
@@ -498,7 +523,7 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
             <CardContent className="flex flex-col gap-2">
                 <BillSplittingDialog items={order.items} />
                 {hasAdvancedPermission && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
-                <Button variant="destructive" className="bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/20" onClick={handleCancelOrder}>Cancel Order</Button>
+                {hasAdvancedPermission && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
             </CardContent>
           </Card>
         </div>
