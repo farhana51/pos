@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockMenu } from "@/lib/data";
-import type { MenuItem } from "@/lib/types";
+import type { MenuItem, UserRole } from "@/lib/types";
 import { MoreVertical, PlusCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import withAuth from "@/components/withAuth";
 
 function MenuTable({ items }: { items: MenuItem[] }) {
   return (
@@ -49,7 +50,7 @@ function MenuTable({ items }: { items: MenuItem[] }) {
   )
 }
 
-export default function MenuPage() {
+function MenuPage() {
   const categories = [...new Set(mockMenu.map(item => item.category))];
   
   return (
@@ -85,3 +86,5 @@ export default function MenuPage() {
     </>
   );
 }
+
+export default withAuth(MenuPage, ['Admin' as UserRole, 'Advanced' as UserRole]);

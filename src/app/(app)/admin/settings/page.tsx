@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import withAuth from "@/components/withAuth";
+import { UserRole } from "@/lib/types";
 
 function SettingRow({ id, title, description, defaultChecked = false }: { id: string, title: string, description: string, defaultChecked?: boolean }) {
     return (
@@ -18,7 +20,7 @@ function SettingRow({ id, title, description, defaultChecked = false }: { id: st
     );
 }
 
-export default function SettingsPage() {
+function SettingsPage() {
   return (
     <>
       <PageHeader title="Admin Settings">
@@ -79,3 +81,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+export default withAuth(SettingsPage, ['Admin' as UserRole]);

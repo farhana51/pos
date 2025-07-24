@@ -1,10 +1,33 @@
-import type { Table, MenuItem, Order, Reservation, User } from './types';
+import type { Table, MenuItem, Order, Reservation, User, UserRole } from './types';
 
 export const mockUser: User = {
   name: 'Alexandre',
   role: 'Admin',
   avatarUrl: 'https://placehold.co/100x100'
 };
+
+// --- Role Management (for demo purposes) ---
+
+/**
+ * In a real app, this would come from an auth context.
+ * We're using a mutable object here to simulate role changes.
+ */
+export const setUserRole = (role: UserRole) => {
+  mockUser.role = role;
+};
+
+/**
+ * Checks if the user's role is included in the list of required roles.
+ */
+export const hasPermission = (userRole: UserRole, requiredRoles: UserRole[]): boolean => {
+  if (!requiredRoles || requiredRoles.length === 0) {
+    return true; // No specific roles required, so access is granted
+  }
+  return requiredRoles.includes(userRole);
+};
+
+
+// --- Mock Data ---
 
 export const mockTables: Table[] = [
   { id: 1, capacity: 2, status: 'Occupied', orderId: 101 },

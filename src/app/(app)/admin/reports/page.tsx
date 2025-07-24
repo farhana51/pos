@@ -4,6 +4,8 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAx
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import withAuth from '@/components/withAuth';
+import { UserRole } from '@/lib/types';
 
 const salesData = [
   { category: 'Mains', sales: 4000 },
@@ -34,7 +36,7 @@ const chartConfig = {
   }
 }
 
-export default function ReportsPage() {
+function ReportsPage() {
   return (
     <>
       <PageHeader title="Reports & Analytics" />
@@ -81,3 +83,5 @@ export default function ReportsPage() {
     </>
   );
 }
+
+export default withAuth(ReportsPage, ['Admin' as UserRole]);

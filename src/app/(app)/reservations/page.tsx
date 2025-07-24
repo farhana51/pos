@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockReservations } from "@/lib/data";
+import withAuth from "@/components/withAuth";
+import { UserRole } from "@/lib/types";
 
 const statusColors: Record<string, string> = {
     Confirmed: 'text-green-600 bg-green-100',
@@ -14,7 +16,7 @@ const statusColors: Record<string, string> = {
     Cancelled: 'text-red-600 bg-red-100',
 }
 
-export default function ReservationsPage() {
+function ReservationsPage() {
     return (
         <>
             <PageHeader title="Reservations">
@@ -75,3 +77,5 @@ export default function ReservationsPage() {
         </>
     );
 }
+
+export default withAuth(ReservationsPage, ['Admin' as UserRole, 'Advanced' as UserRole]);
