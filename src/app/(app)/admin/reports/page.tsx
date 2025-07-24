@@ -1,7 +1,7 @@
 
 'use client'
 
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart, ResponsiveContainer, Sector, XAxis, YAxis } from 'recharts';
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, Tag, TrendingUp, Utensils, Wallet } from 'lucide-react';
+import React from 'react';
 
 const calculateMetrics = () => {
     const totalRevenue = mockOrders.reduce((acc, order) => {
@@ -50,6 +51,19 @@ const getSalesByCategory = () => {
     return Object.entries(categorySales).map(([name, sales]) => ({ name, sales }));
 }
 
+const getPaymentMethodDistribution = () => {
+    const paymentMethods: { [key: string]: number } = {};
+    mockOrders.forEach(order => {
+        if (order.status === 'Paid' && order.paymentMethod) {
+            if (!paymentMethods[order.paymentMethod]) {
+                paymentMethods[order.paymentMethod] = 0;
+            }
+            paymentMethods[order.paymentMethod]++;
+        }
+    });
+    return Object.entries(paymentMethods).map(([name, value]) => ({ name, value, fill: `var(--color-${name.toLowerCase()})` }));
+}
+
 const getWeeklyRevenue = () => {
     // This is simplified, in a real app you'd process real dates
     return [
@@ -67,11 +81,23 @@ const getWeeklyRevenue = () => {
 const chartConfig = {
   sales: {
     label: "Sales",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--chart-1))",
   },
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--accent))",
+    color: "hsl(var(--chart-2))",
+  },
+  card: {
+    label: "Card",
+    color: "hsl(var(--chart-1))",
+  },
+  cash: {
+    label: "Cash",
+    color: "hsl(var(--chart-2))",
+  },
+  voucher: {
+    label: "Voucher",
+    color: "hsl(var(--chart-3))",
   }
 }
 
@@ -81,16 +107,66 @@ const paymentMethodIcons = {
     'Voucher': <Tag className="h-4 w-4" />,
 }
 
+const ActiveShape = (props: any) => {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+  const sin = Math.sin(-RADIAN * midAngle);
+  const cos = Math.cos(-RADIAN * midAngle);
+  const sx = cx + (outerRadius + 10) * cos;
+  const sy = cy + (outerRadius + 10) * sin;
+  const mx = cx + (outerRadius + 30) * cos;
+  const my = cy + (outerRadius + 30) * sin;
+  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+  const ey = my;
+  const textAnchor = cos >= 0 ? 'start' : 'end';
+
+  return (
+    <g>
+      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>{payload.name}</text>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      <Sector
+        cx={cx}
+        cy={cy}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        innerRadius={outerRadius + 6}
+        outerRadius={outerRadius + 10}
+        fill={fill}
+      />
+      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+      <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="hsl(var(--foreground))">{`${value} Txns`}</text>
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="hsl(var(--muted-foreground))">
+        {`(${(percent * 100).toFixed(2)}%)`}
+      </text>
+    </g>
+  );
+};
+
+
 function ReportsPage() {
     const { totalRevenue, totalOrders, averageOrderValue } = calculateMetrics();
     const salesData = getSalesByCategory();
     const revenueData = getWeeklyRevenue();
+    const paymentData = getPaymentMethodDistribution();
+    const [activeIndex, setActiveIndex] = React.useState(0);
+    const onPieEnter = (_: any, index: number) => {
+        setActiveIndex(index);
+    };
 
   return (
     <>
       <PageHeader title="Reports & Analytics" />
       <main className="p-4 sm:p-6 lg:p-8 space-y-8">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -119,6 +195,32 @@ function ReportsPage() {
                 <CardContent>
                     <div className="text-2xl font-bold">£{averageOrderValue.toFixed(2)}</div>
                      <p className="text-xs text-muted-foreground">+19% from last month</p>
+                </CardContent>
+            </Card>
+            <Card className="lg:col-span-1">
+                <CardHeader>
+                    <CardTitle className="font-headline text-lg">Payment Methods</CardTitle>
+                    <CardDescription>Distribution of transactions by payment type.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <PieChart>
+                                <Pie 
+                                    activeIndex={activeIndex}
+                                    activeShape={ActiveShape} 
+                                    data={paymentData} 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    innerRadius={60} 
+                                    outerRadius={80} 
+                                    dataKey="value"
+                                    onMouseEnter={onPieEnter}
+                                >
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
                 </CardContent>
             </Card>
         </div>
