@@ -1,3 +1,4 @@
+
 'use client'
 
 import Link from "next/link"
@@ -22,9 +23,9 @@ import { useState } from "react"
 const allMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/customers", label: "Customers", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
+  { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/team", label: "Team", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },
