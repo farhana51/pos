@@ -70,3 +70,11 @@ export interface TeamMember {
   status: 'Active' | 'Inactive';
   avatarUrl: string;
 }
+
+export interface InventoryItem {
+    id: number;
+    name: string;
+    stock: number;
+    unit: 'kg' | 'g' | 'liters' | 'ml' | 'pcs' | 'bottles';
+    lowThreshold: number;
+}
