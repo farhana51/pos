@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Utensils } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -30,7 +31,9 @@ export default function LoginPage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Sign in</Button>
+          <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+            <Link href="/dashboard">Sign in</Link>
+          </Button>
         </CardFooter>
       </Card>
     </main>
