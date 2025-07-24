@@ -87,4 +87,5 @@ export interface Customer {
     totalOrders: number;
     totalSpent: number;
     lastVisit: string;
+    loyaltyPoints?: number;
 }

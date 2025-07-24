@@ -168,9 +168,9 @@ export const getOrderByTableId = (tableId: number): Order | undefined => {
 };
 
 export const mockCustomers: Customer[] = [
-    { id: 1, name: 'John Doe', email: 'john.d@example.com', phone: '07123456789', totalOrders: 5, totalSpent: 250.75, lastVisit: '2024-08-10' },
-    { id: 2, name: 'Jane Smith', email: 'jane.s@example.com', phone: '07987654321', totalOrders: 12, totalSpent: 890.50, lastVisit: '2024-08-15' },
-    { id: 3, name: 'Peter Jones', email: 'p.jones@example.com', phone: '07555123456', totalOrders: 2, totalSpent: 95.00, lastVisit: '2024-07-20' },
-    { id: 4, name: 'Mary Williams', email: 'mary.w@example.com', phone: '07777888999', totalOrders: 8, totalSpent: 410.20, lastVisit: '2024-08-12' },
-    { id: 5, name: 'David Brown', email: 'd.brown@example.com', phone: '07111222333', totalOrders: 1, totalSpent: 45.80, lastVisit: '2024-06-05' },
+    { id: 1, name: 'John Doe', email: 'john.d@example.com', phone: '07123456789', totalOrders: 5, totalSpent: 250.75, lastVisit: '2024-08-10', loyaltyPoints: 25 },
+    { id: 2, name: 'Jane Smith', email: 'jane.s@example.com', phone: '07987654321', totalOrders: 12, totalSpent: 890.50, lastVisit: '2024-08-15', loyaltyPoints: 89 },
+    { id: 3, name: 'Peter Jones', email: 'p.jones@example.com', phone: '07555123456', totalOrders: 2, totalSpent: 95.00, lastVisit: '2024-07-20', loyaltyPoints: 9 },
+    { id: 4, name: 'Mary Williams', email: 'mary.w@example.com', phone: '07777888999', totalOrders: 8, totalSpent: 410.20, lastVisit: '2024-08-12', loyaltyPoints: 41 },
+    { id: 5, name: 'David Brown', email: 'd.brown@example.com', phone: '07111222333', totalOrders: 1, totalSpent: 45.80, lastVisit: '2024-06-05', loyaltyPoints: 4 },
 ]

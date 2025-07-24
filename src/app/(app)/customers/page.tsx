@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from "react";
-import { MoreVertical, PlusCircle } from "lucide-react";
+import { MoreVertical, PlusCircle, Award } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ function CustomersPage() {
                                     <TableHead>Contact</TableHead>
                                     <TableHead>Total Orders</TableHead>
                                     <TableHead>Total Spent</TableHead>
+                                    <TableHead>Loyalty Points</TableHead>
                                     <TableHead>Last Visit</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
@@ -61,6 +62,12 @@ function CustomersPage() {
                                         </TableCell>
                                          <TableCell>{customer.totalOrders}</TableCell>
                                         <TableCell>£{customer.totalSpent.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5">
+                                                <Award className="h-4 w-4 text-yellow-500" />
+                                                {customer.loyaltyPoints ?? 0}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>{format(new Date(customer.lastVisit), 'PPP')}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -71,6 +78,7 @@ function CustomersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
                                                     <DropdownMenuItem>View History</DropdownMenuItem>
+                                                    <DropdownMenuItem>Adjust Points</DropdownMenuItem>
                                                     <DropdownMenuItem>Edit</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
