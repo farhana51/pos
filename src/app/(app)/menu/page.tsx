@@ -1,3 +1,7 @@
+
+'use client'
+
+import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +13,9 @@ import { MoreVertical, PlusCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import withAuth from "@/components/withAuth";
+import { MenuItemDialog } from "./_components/MenuItemDialog";
 
-function MenuTable({ items }: { items: MenuItem[] }) {
+function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuItem) => void }) {
   return (
     <Table>
       <TableHeader>
@@ -18,6 +23,7 @@ function MenuTable({ items }: { items: MenuItem[] }) {
           <TableHead>Name</TableHead>
           <TableHead>Price</TableHead>
           <TableHead>VAT</TableHead>
+          <TableHead>Add-ons</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -27,9 +33,17 @@ function MenuTable({ items }: { items: MenuItem[] }) {
             <TableCell className="font-medium">
               <div>{item.name}</div>
               <div className="text-xs text-muted-foreground truncate max-w-xs">{item.description}</div>
+              {item.subcategory && <Badge variant="secondary" className="mt-1">{item.subcategory}</Badge>}
             </TableCell>
             <TableCell>£{item.price.toFixed(2)}</TableCell>
             <TableCell><Badge variant="outline">{item.vatRate}%</Badge></TableCell>
+            <TableCell>
+              {item.addons?.map(addon => (
+                <div key={addon.id} className="text-xs text-muted-foreground">
+                  {addon.name} (+£{addon.price.toFixed(2)})
+                </div>
+              ))}
+            </TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -38,7 +52,7 @@ function MenuTable({ items }: { items: MenuItem[] }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit(item)}>Edit</DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -51,12 +65,34 @@ function MenuTable({ items }: { items: MenuItem[] }) {
 }
 
 function MenuPage() {
-  const categories = [...new Set(mockMenu.map(item => item.category))];
+  const [menu, setMenu] = useState<MenuItem[]>(mockMenu);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const categories = [...new Set(menu.map(item => item.category))];
+
+  const handleAddItem = () => {
+    setEditingItem(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditItem = (item: MenuItem) => {
+    setEditingItem(item);
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveItem = (item: MenuItem) => {
+    if(editingItem) {
+        setMenu(menu.map(m => m.id === item.id ? item : m));
+    } else {
+        setMenu([...menu, { ...item, id: menu.length + 1 }]);
+    }
+  }
   
   return (
     <>
       <PageHeader title="Menu Management">
-        <Button>
+        <Button onClick={handleAddItem}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Menu Item
         </Button>
@@ -76,13 +112,19 @@ function MenuPage() {
                 </TabsList>
                 {categories.map(category => (
                     <TabsContent key={category} value={category}>
-                        <MenuTable items={mockMenu.filter(item => item.category === category)} />
+                        <MenuTable items={menu.filter(item => item.category === category)} onEdit={handleEditItem} />
                     </TabsContent>
                 ))}
                 </Tabs>
             </CardContent>
         </Card>
       </main>
+      <MenuItemDialog 
+        isOpen={isDialogOpen}
+        setIsOpen={setIsDialogOpen}
+        onSave={handleSaveItem}
+        item={editingItem}
+      />
     </>
   );
 }
