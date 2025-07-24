@@ -1,20 +1,150 @@
-import { notFound } from 'next/navigation';
+
+'use client'
+
+import { notFound, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { mockOrders, mockMenu } from '@/lib/data';
-import type { OrderItem } from '@/lib/types';
+import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, setUserRole, mockUser } from '@/lib/data';
+import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType } from '@/lib/types';
 import { format } from 'date-fns';
 import { UpsellRecommender } from '@/components/ai/UpsellRecommender';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle } from 'lucide-react';
+import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X } from 'lucide-react';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import withAuth from '@/components/withAuth';
 
-const getOrderById = (id: number) => mockOrders.find(o => o.id === id);
 
-function OrderItemsTable({ items }: { items: OrderItem[] }) {
-  const total = items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+const getOrderById = (id: number) => {
+    const order = getOrderData(id);
+    if(order) return order;
+    return mockOrders.find(o => o.id === id);
+}
+
+function AddItemDialog({ onAddItem, orderId }: { onAddItem: (item: OrderItem) => void; orderId: number }) {
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
+  const [notes, setNotes] = useState('');
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleSelectAddon = (addon: Addon) => {
+    setSelectedAddons(prev =>
+      prev.find(a => a.id === addon.id)
+        ? prev.filter(a => a.id !== addon.id)
+        : [...prev, addon]
+    );
+  };
+  
+  const handleAddItem = () => {
+    if (selectedItem) {
+      onAddItem({
+        menuItem: selectedItem,
+        quantity: 1,
+        selectedAddons,
+        notes,
+      });
+      toast({
+          title: "Item Added",
+          description: `${selectedItem.name} has been added to the order.`,
+      })
+      setSelectedItem(null);
+      setSelectedAddons([]);
+      setNotes('');
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <PlusCircle className="mr-2" /> Add Item
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Item to Order #{orderId}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Select Item</Label>
+            <Select onValueChange={(value) => setSelectedItem(mockMenu.find(item => item.id === parseInt(value)) || null)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a menu item" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockMenu.map(item => (
+                  <SelectItem key={item.id} value={item.id.toString()}>{item.name} - £{item.price.toFixed(2)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedItem?.addons && selectedItem.addons.length > 0 && (
+            <div className="grid gap-2">
+              <Label>Add-ons</Label>
+              <div className='space-y-2'>
+                {selectedItem.addons.map(addon => (
+                  <div key={addon.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`addon-${addon.id}`}
+                      onCheckedChange={() => handleSelectAddon(addon)}
+                    />
+                    <Label htmlFor={`addon-${addon.id}`} className="font-normal flex-grow">
+                      {addon.name} (+£{addon.price.toFixed(2)})
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="grid gap-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea id="notes" placeholder="e.g. extra spicy, no onions" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+          <Button onClick={handleAddItem} disabled={!selectedItem}>Add to Order</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void }) {
+  const total = items.reduce((sum, item) => {
+    const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+    return sum + (item.menuItem.price + addonsTotal) * item.quantity;
+  }, 0);
+
+  const totalVat = items.reduce((sum, item) => {
+      if (item.menuItem.vatRate === 20) {
+          const itemTotal = item.menuItem.price * item.quantity;
+          const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+          return sum + ((itemTotal + addonsTotal) * 0.2);
+      }
+      return sum;
+  }, 0);
+
+  const grandTotal = total + totalVat;
+
+  const handleQuantityChange = (index: number, newQuantity: number) => {
+      const updatedItems = [...items];
+      if(newQuantity > 0) {
+          updatedItems[index].quantity = newQuantity;
+      } else {
+          updatedItems.splice(index, 1);
+      }
+      onUpdateItems(updatedItems);
+  }
 
   return (
     <Card>
@@ -38,23 +168,33 @@ function OrderItemsTable({ items }: { items: OrderItem[] }) {
                   {item.menuItem.name}
                   {item.selectedAddons && item.selectedAddons.length > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      {item.selectedAddons.map(addon => `+ ${addon.name}`).join(', ')}
+                      {item.selectedAddons.map(addon => `+ ${addon.name} (£${addon.price.toFixed(2)})`).join(', ')}
                     </div>
                   )}
                   {item.notes && <p className="text-xs text-muted-foreground">Note: {item.notes}</p>}
                 </TableCell>
-                <TableCell className="text-center">{item.quantity}</TableCell>
-                <TableCell className="text-right">£{item.menuItem.price.toFixed(2)}</TableCell>
-                <TableCell className="text-right">£{(item.menuItem.price * item.quantity).toFixed(2)}</TableCell>
+                <TableCell className="text-center">
+                    <div className='flex items-center justify-center gap-2'>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(index, item.quantity - 1)}><MinusCircle className="h-4 w-4" /></Button>
+                        <span>{item.quantity}</span>
+                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(index, item.quantity + 1)}><PlusCircle className="h-4 w-4" /></Button>
+                    </div>
+                </TableCell>
+                <TableCell className="text-right">£{(item.menuItem.price + (item.selectedAddons?.reduce((acc, a) => acc + a.price, 0) || 0)).toFixed(2)}</TableCell>
+                <TableCell className="text-right">£{((item.menuItem.price + (item.selectedAddons?.reduce((acc, a) => acc + a.price, 0) || 0)) * item.quantity).toFixed(2)}</TableCell>
               </TableRow>
             ))}
-            <TableRow className="font-bold bg-muted/50">
+            <TableRow className="font-semibold bg-muted/30">
               <TableCell colSpan={3}>Subtotal</TableCell>
               <TableCell className="text-right">£{total.toFixed(2)}</TableCell>
             </TableRow>
-             <TableRow className="font-bold">
-              <TableCell colSpan={3}>Total (inc. VAT)</TableCell>
-              <TableCell className="text-right">£{(total * 1.2).toFixed(2)}</TableCell>
+             <TableRow className="font-semibold bg-muted/30">
+              <TableCell colSpan={3}>VAT</TableCell>
+              <TableCell className="text-right">£{totalVat.toFixed(2)}</TableCell>
+            </TableRow>
+            <TableRow className="font-bold text-lg bg-muted/50">
+              <TableCell colSpan={3}>Total</TableCell>
+              <TableCell className="text-right">£{grandTotal.toFixed(2)}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -63,35 +203,276 @@ function OrderItemsTable({ items }: { items: OrderItem[] }) {
   );
 }
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+function BillSplittingDialog({ items }: { items: OrderItem[] }) {
+    const [splitItems, setSplitItems] = useState<Record<number, OrderItem[]>>({ 1: [], 2: [] });
+    const [selectedBill, setSelectedBill] = useState<number>(1);
+    const { toast } = useToast();
+
+    const unassignedItems = items.filter(
+        item => ![...splitItems[1], ...splitItems[2]].some(splitItem => splitItem.menuItem.id === item.menuItem.id)
+    );
+
+    const handleAssignItem = (item: OrderItem, billNumber: number) => {
+        setSplitItems(prev => ({
+            ...prev,
+            [billNumber]: [...prev[billNumber], item]
+        }));
+    };
+
+    const handleUnassignItem = (item: OrderItem, billNumber: number) => {
+        setSplitItems(prev => ({
+            ...prev,
+            [billNumber]: prev[billNumber].filter(i => i.menuItem.id !== item.menuItem.id)
+        }));
+    };
+
+    const calculateBillTotal = (billItems: OrderItem[]) => {
+        const subtotal = billItems.reduce((sum, item) => {
+            const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+            return sum + (item.menuItem.price + addonsTotal) * item.quantity;
+        }, 0);
+        const vat = billItems.reduce((sum, item) => {
+            if (item.menuItem.vatRate === 20) {
+                 const itemTotal = item.menuItem.price * item.quantity;
+                const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+                return sum + ((itemTotal + addonsTotal) * 0.2);
+            }
+            return sum;
+        }, 0);
+        return subtotal + vat;
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="secondary" disabled={items.length === 0}><Users className="mr-2" /> Split Bill</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>Split the Bill</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-3 gap-4 py-4">
+                    <div className="col-span-1">
+                        <h3 className="font-semibold mb-2">Unassigned Items</h3>
+                        <div className="space-y-2 rounded-md border p-2 h-96 overflow-y-auto">
+                            {unassignedItems.map((item, idx) => (
+                                <div key={idx} className="p-2 border rounded-md text-sm">
+                                    <p>{item.menuItem.name} (x{item.quantity})</p>
+                                    <div className="flex gap-2 mt-1">
+                                        <Button size="sm" variant="outline" onClick={() => handleAssignItem(item, 1)}>Bill 1</Button>
+                                        <Button size="sm" variant="outline" onClick={() => handleAssignItem(item, 2)}>Bill 2</Button>
+                                    </div>
+                                </div>
+                            ))}
+                            {unassignedItems.length === 0 && <p className="text-muted-foreground text-sm p-4 text-center">All items assigned.</p>}
+                        </div>
+                    </div>
+                    <div className="col-span-2 grid grid-cols-2 gap-4">
+                        {[1, 2].map(billNumber => (
+                            <div key={billNumber}>
+                                <h3 className="font-semibold mb-2">Bill {billNumber}</h3>
+                                <div className="space-y-2 rounded-md border p-2 h-96 overflow-y-auto">
+                                    {splitItems[billNumber].map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 border rounded-md text-sm">
+                                            <span>{item.menuItem.name} (x{item.quantity})</span>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleUnassignItem(item, billNumber)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <div className="font-bold text-right pr-2 pt-2 border-t">
+                                        Total: £{calculateBillTotal(splitItems[billNumber]).toFixed(2)}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                    <Button onClick={() => toast({ title: "Bills Split", description: "The bill has been successfully split into two."})}>Confirm Split</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function TableTransferDialog({ orderId, currentTableId }: { orderId: number, currentTableId: number }) {
+    const [targetTableId, setTargetTableId] = useState<number | null>(null);
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const availableTables = mockTables.filter(t => t.status === 'Available' && t.id !== currentTableId);
+
+    const handleTransfer = () => {
+        if (targetTableId) {
+            // In a real app, this would be a server action
+            console.log(`Transferring Order ${orderId} from Table ${currentTableId} to Table ${targetTableId}`);
+            toast({
+                title: "Table Transferred",
+                description: `Order #${orderId} has been moved to Table ${targetTableId}.`
+            });
+            // Simulate navigation or data refresh
+            router.push(`/dashboard`);
+        }
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="secondary">Transfer Table</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Transfer Table for Order #{orderId}</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <p>Current Table: <span className="font-bold">{currentTableId}</span></p>
+                    <div>
+                        <Label htmlFor="target-table">Select New Table</Label>
+                        <Select onValueChange={(value) => setTargetTableId(parseInt(value))}>
+                            <SelectTrigger id="target-table">
+                                <SelectValue placeholder="Choose an available table" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableTables.map(table => (
+                                    <SelectItem key={table.id} value={table.id.toString()}>
+                                        Table {table.id} (Capacity: {table.capacity})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                    <Button onClick={handleTransfer} disabled={!targetTableId}>Confirm Transfer</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function PaymentDialog({ total }: { total: number }) {
+    const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handlePayment = () => {
+        if (paymentMethod) {
+            toast({
+                title: "Payment Successful",
+                description: `Paid £${total.toFixed(2)} via ${paymentMethod}.`,
+            });
+            router.push('/dashboard');
+        }
+    }
+
+    const paymentOptions = [
+        { id: 'Cash', name: 'Cash', icon: HandCoins },
+        { id: 'Card', name: 'Card', icon: CreditCard },
+        { id: 'Voucher', name: 'Voucher', icon: Tag },
+    ]
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                 <Button className="bg-accent text-accent-foreground hover:bg-accent/90"><Sparkles className="mr-2" /> Finalize Bill</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Finalize Payment</DialogTitle>
+                    <DialogDescription>Total amount to be paid: <span className="font-bold text-foreground">£{total.toFixed(2)}</span></DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label>Select Payment Method</Label>
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                        {paymentOptions.map(opt => (
+                            <Button
+                                key={opt.id}
+                                variant={paymentMethod === opt.id ? 'default' : 'outline'}
+                                onClick={() => setPaymentMethod(opt.id)}
+                                className="flex flex-col h-24"
+                            >
+                                <opt.icon className="h-8 w-8 mb-2"/>
+                                {opt.name}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                    <Button onClick={handlePayment} disabled={!paymentMethod}>Process Payment</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function OrderDetailsPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const orderId = parseInt(params.id, 10);
-  const order = getOrderById(orderId);
+  const [order, setOrder] = useState(getOrderById(orderId));
+  const hasAdvancedPermission = ['Admin', 'Advanced'].includes(mockUser.role);
 
   if (!order) {
     notFound();
   }
+  
+  const handleUpdateItems = (newItems: OrderItem[]) => {
+      setOrder(prev => prev ? {...prev, items: newItems} : null);
+  }
+
+  const handlePrint = () => {
+    toast({
+      title: "Printing...",
+      description: "Sending order to the kitchen printer.",
+    });
+  }
+  
+  const handleCancelOrder = () => {
+    toast({
+      variant: "destructive",
+      title: "Order Cancelled",
+      description: `Order #${order.id} has been cancelled.`,
+    });
+    router.push('/dashboard');
+  }
+
+ const total = order.items.reduce((sum, item) => {
+    const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+    return sum + (item.menuItem.price + addonsTotal) * item.quantity;
+  }, 0);
+
+  const totalVat = order.items.reduce((sum, item) => {
+      if (item.menuItem.vatRate === 20) {
+          const itemTotal = item.menuItem.price * item.quantity;
+          const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+          return sum + ((itemTotal + addonsTotal) * 0.2);
+      }
+      return sum;
+  }, 0);
+
+  const grandTotal = total + totalVat;
+
 
   return (
     <>
       <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
-        <Button variant="outline">Print Order</Button>
-        <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Finalize Bill</Button>
+        <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
+        <PaymentDialog total={grandTotal} />
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
-          <OrderItemsTable items={order.items} />
+          <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
            <Card>
               <CardHeader>
-                <CardTitle>Add to Order</CardTitle>
-                <CardDescription>Quickly add popular items to this order.</CardDescription>
+                <CardTitle>Modify Order</CardTitle>
+                <CardDescription>Add new items to this order.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
-                {mockMenu.slice(0,5).map(item => (
-                   <Button variant="outline" key={item.id} className="flex items-center gap-2">
-                     <PlusCircle className="h-4 w-4"/>
-                     {item.name}
-                   </Button>
-                ))}
+                <AddItemDialog onAddItem={(item) => handleUpdateItems([...order.items, item])} orderId={order.id} />
               </CardContent>
             </Card>
         </div>
@@ -115,9 +496,9 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-                <Button variant="secondary">Split Bill</Button>
-                <Button variant="secondary">Transfer Table</Button>
-                <Button variant="destructive" className="bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/20">Cancel Order</Button>
+                <BillSplittingDialog items={order.items} />
+                {hasAdvancedPermission && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
+                <Button variant="destructive" className="bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/20" onClick={handleCancelOrder}>Cancel Order</Button>
             </CardContent>
           </Card>
         </div>
@@ -125,3 +506,8 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
     </>
   );
 }
+
+// Wrapping with withAuth HOC and specifying required roles
+export default withAuth(OrderDetailsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+
+    
