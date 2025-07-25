@@ -521,7 +521,7 @@ function NewOrderPage() {
             title: "Order Sent to Kitchen",
             description: `Order #${newOrderId} has been sent for preparation.`
         })
-        router.push(`/orders/${newOrderId}`);
+        router.push('/landing');
     }
 
     const handleSelectItem = (item: MenuItem) => {
