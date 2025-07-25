@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,12 @@ export function CategoryDialog({ isOpen, setIsOpen, categories, onSave }: Catego
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newSubcategoryNames, setNewSubcategoryNames] = useState<Record<string, string>>({});
 
-  useState(() => {
+  useEffect(() => {
     if (isOpen) {
       // Deep copy to avoid mutating the original state until save
       setLocalCategories(JSON.parse(JSON.stringify(categories)));
     }
-  });
+  }, [isOpen, categories]);
 
   const handleAddCategory = () => {
     if (newCategoryName && !localCategories.find(c => c.name.toLowerCase() === newCategoryName.toLowerCase())) {
