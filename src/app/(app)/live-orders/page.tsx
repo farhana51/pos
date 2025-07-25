@@ -28,13 +28,23 @@ function OrderCard({ order }: { order: Order }) {
     const router = useRouter();
     const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+    const getOrderTitle = () => {
+        if (order.type === 'Collection') {
+            return `Collection for ${order.customerName}`;
+        }
+        if (order.type === 'Delivery') {
+            return `Delivery for ${order.customerName}`;
+        }
+        return `Order #${order.id}`;
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                     <span className="flex items-center">
                         <OrderTypeIcon type={order.type} />
-                        {order.type === 'Collection' ? `Collection for ${order.customerName}` : `Delivery Order #${order.id}`}
+                        {getOrderTitle()}
                     </span>
                     <Badge variant="outline" className="text-amber-500 border-amber-500">{order.status}</Badge>
                 </CardTitle>
