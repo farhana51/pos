@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, setUserRole, mockUser } from '@/lib/data';
 import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType } from '@/lib/types';
 import { format } from 'date-fns';
-import { UpsellRecommender } from '@/components/ai/UpsellRecommender';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X } from 'lucide-react';
 import { useState } from 'react';
@@ -514,8 +513,6 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
           
-          <UpsellRecommender items={order.items} />
-
           <Card>
             <CardHeader>
               <CardTitle>Actions</CardTitle>
