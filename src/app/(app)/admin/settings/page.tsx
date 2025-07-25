@@ -10,7 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import withAuth from "@/components/withAuth";
 import { useToast } from "@/hooks/use-toast";
+import { mockTables } from "@/lib/data";
 import { UserRole } from "@/lib/types";
+import { FilePlus2 } from "lucide-react";
 import { useState } from "react";
 
 function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id: string, title:string, description: string, isChecked: boolean, onCheckedChange: (checked: boolean) => void }) {
@@ -42,6 +44,8 @@ function SettingsPage() {
     });
 
     const [printerIps, setPrinterIps] = useState<string[]>(['192.168.1.101', '', '', '', '']);
+    const [floors, setFloors] = useState<string[]>([...new Set(mockTables.map(t => t.floor))]);
+    const [newFloorName, setNewFloorName] = useState('');
 
     const handleSettingChange = (key: keyof typeof settings) => (value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -53,9 +57,27 @@ function SettingsPage() {
         setPrinterIps(newIps);
     }
 
+    const handleAddFloor = () => {
+        if (newFloorName && !floors.includes(newFloorName)) {
+            setFloors(prev => [...prev, newFloorName]);
+            setNewFloorName('');
+            toast({
+                title: "Floor Added",
+                description: `The "${newFloorName}" floor has been added.`,
+            });
+        } else if (floors.includes(newFloorName)) {
+             toast({
+                variant: "destructive",
+                title: "Floor Exists",
+                description: "A floor with this name already exists.",
+            });
+        }
+    }
+
+
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps });
+        console.log("Saving settings:", { settings, printerIps, floors });
         toast({
             title: "Settings Saved",
             description: "Your changes have been successfully saved.",
@@ -93,6 +115,37 @@ function SettingsPage() {
                         <SettingRow id="online-ordering" title="Online Orders" description="Accept orders from your website." isChecked={settings.onlineOrdering} onCheckedChange={handleSettingChange('onlineOrdering')} />
                         <SettingRow id="collection" title="Collection / Takeaway" description="Allow customers to order for pickup." isChecked={settings.collection} onCheckedChange={handleSettingChange('collection')} />
                         <SettingRow id="delivery-channel" title="Delivery" description="Offer a delivery service." isChecked={settings.deliveryChannel} onCheckedChange={handleSettingChange('deliveryChannel')} />
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Floor Management</CardTitle>
+                        <CardDescription>Manage the different floors or sections of your restaurant.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h4 className="text-sm font-medium mb-2">Existing Floors</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {floors.map(floor => (
+                                    <div key={floor} className="bg-muted px-3 py-1 rounded-full text-sm text-muted-foreground">{floor}</div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-floor">Add New Floor</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    id="new-floor" 
+                                    type="text" 
+                                    placeholder="e.g. Rooftop Bar" 
+                                    value={newFloorName}
+                                    onChange={(e) => setNewFloorName(e.target.value)}
+                                />
+                                <Button onClick={handleAddFloor}><FilePlus2 className="mr-2" /> Add Floor</Button>
+                            </div>
+                             <p className="text-xs text-muted-foreground">Note: Added floors are not saved permanently in this demo.</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
