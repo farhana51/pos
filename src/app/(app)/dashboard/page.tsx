@@ -89,6 +89,8 @@ function TableVisual({ table, isSelected, onMouseDown }: { table: Table; isSelec
 
 
 function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
+    if (!selectedTable) return null;
+
     const order = selectedTable?.orderId ? getOrderByTableId(selectedTable.orderId) : null;
 
     const subtotal = order?.items.reduce((sum, item) => {
@@ -325,7 +327,7 @@ export default function DashboardPage() {
         </Button>
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 items-start">
-        <div className="md:col-span-2">
+        <div className={cn("md:col-span-2", !selectedTable && "md:col-span-3")}>
             <Card>
                 <CardHeader>
                      <Tabs defaultValue={floors[0]} className="w-full">
@@ -341,6 +343,7 @@ export default function DashboardPage() {
                                     className="relative h-[600px] w-full bg-cover bg-center rounded-md border"
                                     style={{ backgroundImage: `url(${floorPlanBackgrounds[floor]?.url ?? ''})` }}
                                     data-ai-hint={floorPlanBackgrounds[floor]?.hint ?? ''}
+                                    onClick={() => setSelectedTableId(null)}
                                 >
                                     {tables.filter(t => t.floor === floor).map((table) => (
                                         <TableVisual 
