@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,14 @@ export default function LoginPage() {
     const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentDateTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const handleLogin = () => {
         const user = findUserByCredentials(email, password);
@@ -89,8 +97,10 @@ export default function LoginPage() {
             </Card>
         </div>
       </div>
-      <div className="flex-1 bg-secondary hidden md:flex items-center justify-center">
-          <h1 className="text-6xl font-bold text-muted-foreground">Welcome.</h1>
+      <div className="flex-1 bg-secondary hidden md:flex flex-col items-center justify-center text-muted-foreground p-4">
+          <h1 className="text-6xl font-bold">Welcome Tikka</h1>
+          <p className="text-xl mt-4 font-medium">{currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-4xl font-mono mt-2">{currentDateTime.toLocaleTimeString()}</p>
       </div>
     </main>
   );
