@@ -1,6 +1,8 @@
 export type UserRole = 'Basic' | 'Advanced' | 'Admin';
 
 export interface User {
+  id: string;
+  password?: string;
   name: string;
   role: UserRole;
   avatarUrl: string;

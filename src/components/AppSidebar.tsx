@@ -14,11 +14,11 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { mockUser, setUserRole, hasPermission } from "@/lib/data"
+import { mockUser, setUserRole, hasPermission, logoutUser } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { UserRole } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const allMenuItems = [
   { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
@@ -40,6 +40,24 @@ export function AppSidebar() {
   // This is a local state to re-render the component when the role changes.
   const [currentUser, setCurrentUser] = useState(mockUser);
 
+  useEffect(() => {
+    // This effect ensures the sidebar updates if the user is changed in another tab
+    const handleStorageChange = () => {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            setCurrentUser(JSON.parse(storedUser));
+        }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Set initial user from mockUser on mount
+    setCurrentUser(mockUser);
+    
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   const isActive = (path: string) => {
     if (path === '/landing' || path === '/dashboard' || path === '/collection' || path === '/delivery' || path === '/online-orders') return pathname === path;
     return pathname.startsWith(path)
@@ -49,6 +67,10 @@ export function AppSidebar() {
     setUserRole(role);
     // Create a new object to force re-render
     setCurrentUser({ ...mockUser, role });
+  }
+
+  const handleLogout = () => {
+    logoutUser();
   }
 
   const menuItems = allMenuItems.filter(item => hasPermission(currentUser.role, item.requiredRoles));
@@ -86,7 +108,7 @@ export function AppSidebar() {
         <div className="flex flex-col gap-2 p-2">
             <div className="group-data-[collapsible=icon]:hidden">
                 <label className="text-xs text-muted-foreground">Role Switcher (for demo)</label>
-                 <Select onValueChange={handleRoleChange} defaultValue={currentUser.role}>
+                 <Select onValueChange={handleRoleChange} value={currentUser.role}>
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select Role" />
                     </SelectTrigger>
@@ -110,6 +132,7 @@ export function AppSidebar() {
                     asChild
                     tooltip={{ children: "Logout" }}
                     className="ml-auto group-data-[collapsible=icon]:ml-0"
+                    onClick={handleLogout}
                   >
                     <Link href="/login">
                       <LogOut />

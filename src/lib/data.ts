@@ -1,19 +1,54 @@
 import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer } from './types';
 
-export const mockUser: User = {
-  name: 'Alexandre',
-  role: 'Admin',
-  avatarUrl: 'https://placehold.co/100x100'
-};
+// --- User Data ---
+const allUsers: User[] = [
+    { id: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 'user1', password: 'user1', name: 'Bob', role: 'Advanced', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 'user', password: 'user', name: 'Charlie', role: 'Basic', avatarUrl: 'https://placehold.co/100x100.png' }
+];
 
-// --- Role Management (for demo purposes) ---
+// --- Authentication and State Management (for demo purposes) ---
 
 /**
- * In a real app, this would come from an auth context.
- * We're using a mutable object here to simulate role changes.
+ * In a real app, this would be managed via a proper state management solution (Context, Redux, etc.)
+ * and the user object would be fetched from a secure API endpoint.
+ * We are using a simple mutable object and localStorage here to simulate a logged-in session.
+ */
+export let mockUser: User = allUsers[0]; // Default to admin for initial load
+
+if (typeof window !== 'undefined') {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+        mockUser = JSON.parse(storedUser);
+    }
+}
+
+export const findUserByCredentials = (id: string, pass: string): User | undefined => {
+    return allUsers.find(u => u.id === id && u.password === pass);
+};
+
+export const setCurrentUser = (user: User) => {
+  mockUser = user;
+  if (typeof window !== 'undefined') {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+  }
+};
+
+export const logoutUser = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentUser');
+    }
+    // Set a default user so the app doesn't crash on logout
+    mockUser = { id: '', name: 'Guest', role: 'Basic', avatarUrl: '' }; 
+}
+
+/**
+ * Sets the user's role. This is kept for the demo role-switcher.
+ * In a real app, roles would be part of the user object from the database.
  */
 export const setUserRole = (role: UserRole) => {
-  mockUser.role = role;
+  const currentUser = { ...mockUser, role };
+  setCurrentUser(currentUser);
 };
 
 /**

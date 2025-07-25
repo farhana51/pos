@@ -6,6 +6,8 @@ import { AppSidebar } from "@/components/AppSidebar"
 import { useIdle } from "@/hooks/use-idle";
 import { usePathname, useRouter } from "next/navigation";
 import { mockUser } from "@/lib/data";
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/types";
 
 export default function AppLayout({
   children,
@@ -14,7 +16,30 @@ export default function AppLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = mockUser;
+  // We use state to ensure the component re-renders when the user changes.
+  const [user, setUser] = useState<User>(mockUser);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        } else {
+            // If user is logged out, redirect to login
+            router.push('/login');
+        }
+    };
+
+    // Listen for changes in localStorage from other tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Initial check
+    handleStorageChange();
+
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [router]);
   
   // Redirect to landing page after 60 seconds of inactivity, but not if we are on landing already
   useIdle({
