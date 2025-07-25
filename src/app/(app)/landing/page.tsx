@@ -11,25 +11,29 @@ import { logoutUser, mockUser, mockOrders } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 const allServiceOptions = [
   {
     title: "Restaurant",
     icon: LayoutDashboard,
     href: "/dashboard",
-    roles: ['Admin', 'Advanced', 'Basic']
+    roles: ['Admin', 'Advanced', 'Basic'],
+    setting: "restaurant"
   },
   {
     title: "Take Away",
     icon: Home,
     href: "/collection/new",
-    roles: ['Admin', 'Advanced', 'Basic']
+    roles: ['Admin', 'Advanced', 'Basic'],
+    setting: "collection"
   },
   {
     title: "Delivery",
     icon: Car,
     href: "/delivery/new",
-    roles: ['Admin', 'Advanced', 'Basic']
+    roles: ['Admin', 'Advanced', 'Basic'],
+    setting: "delivery"
   },
    {
     title: "Live Orders",
@@ -42,19 +46,22 @@ const allServiceOptions = [
     title: "Online Order",
     icon: Globe,
     href: "/online-orders",
-    roles: ['Admin', 'Advanced']
+    roles: ['Admin', 'Advanced'],
+    setting: "onlineOrdering"
   },
   {
     title: "Reservation",
     icon: Calendar,
     href: "/reservations",
-    roles: ['Admin', 'Advanced', 'Basic']
+    roles: ['Admin', 'Advanced', 'Basic'],
+    setting: "reservations"
   },
    {
     title: "CRM",
     icon: Contact,
     href: "/customers",
-    roles: ['Admin'] // Now only Admin
+    roles: ['Admin'],
+    setting: "crm"
   },
   {
     title: "HR",
@@ -66,7 +73,8 @@ const allServiceOptions = [
     title: "Inventory",
     icon: Package,
     href: "/inventory",
-    roles: ['Admin'] // Now only Admin
+    roles: ['Admin'],
+    setting: "inventory"
   },
   {
     title: "Reports",
@@ -88,14 +96,53 @@ const allServiceOptions = [
   }
 ];
 
+const defaultSettings = {
+    reservations: true,
+    inventory: true,
+    crm: false,
+    delivery: true,
+    onlineOrdering: true,
+    collection: true,
+    restaurant: true,
+};
+
 export default function LandingPage() {
+  const [appSettings, setAppSettings] = useState(defaultSettings);
+
+  useEffect(() => {
+    const loadSettings = () => {
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            setAppSettings(JSON.parse(savedSettings));
+        }
+    };
+    loadSettings();
+    window.addEventListener('storage', loadSettings); // Listen for changes from other tabs/windows
+    return () => {
+        window.removeEventListener('storage', loadSettings);
+    };
+  }, []);
+
   const pendingOrders = mockOrders.filter(o => o.status === 'Pending' && (o.type === 'Collection' || o.type === 'Delivery'));
 
   const serviceOptions = allServiceOptions.filter(option => {
-    if (option.isDynamic) {
-        return pendingOrders.length > 0 && option.roles.includes(mockUser.role);
+    // Check role permission
+    const hasRolePermission = option.roles.includes(mockUser.role);
+    if (!hasRolePermission) return false;
+    
+    // Check if the feature is enabled in settings
+    if (option.setting) {
+      // @ts-ignore
+      const isEnabled = appSettings[option.setting];
+      if (!isEnabled) return false;
     }
-    return option.roles.includes(mockUser.role);
+    
+    // Handle dynamic options like Live Orders
+    if (option.isDynamic) {
+        return pendingOrders.length > 0;
+    }
+
+    return true;
   });
   
   const isBasicUser = mockUser.role === 'Basic';

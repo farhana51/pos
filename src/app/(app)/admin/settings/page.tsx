@@ -29,31 +29,38 @@ function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id
     );
 }
 
+const defaultSettings = {
+    reservations: true,
+    inventory: true,
+    crm: false,
+    deliveryTracking: true,
+    suppliers: false,
+    onlineOrdering: true,
+    collection: true,
+    delivery: true,
+    restaurant: true,
+    customerDisplay: true,
+    kitchenDisplay: false,
+    labelPrinter: true,
+};
+
 function SettingsPage() {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        reservations: true,
-        inventory: true,
-        crm: false,
-        deliveryTracking: true,
-        suppliers: false,
-        onlineOrdering: true,
-        collection: true,
-        deliveryChannel: false,
-        customerDisplay: true,
-        kitchenDisplay: false,
-        labelPrinter: true,
-    });
+    const [settings, setSettings] = useState(defaultSettings);
 
     const [discountSettings, setDiscountSettings] = useState({
         enabled: true,
         type: 'percentage' as 'percentage' | 'amount',
     });
-
+    
     useEffect(() => {
-        const savedSettings = localStorage.getItem('discountSettings');
+        const savedSettings = localStorage.getItem('appSettings');
         if (savedSettings) {
-            setDiscountSettings(JSON.parse(savedSettings));
+            setSettings(JSON.parse(savedSettings));
+        }
+        const savedDiscountSettings = localStorage.getItem('discountSettings');
+        if (savedDiscountSettings) {
+            setDiscountSettings(JSON.parse(savedDiscountSettings));
         }
     }, []);
 
@@ -90,10 +97,12 @@ function SettingsPage() {
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
         console.log("Saving settings:", { settings, printerIps, floors, discountSettings });
+        localStorage.setItem('appSettings', JSON.stringify(settings));
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
+        window.dispatchEvent(new Event('storage')); // Notify other components of changes
         toast({
             title: "Settings Saved",
-            description: "Your changes have been saved successfully.",
+            description: "Your changes have been saved successfully. Some changes may require a refresh.",
         });
     }
 
@@ -111,10 +120,10 @@ function SettingsPage() {
                         <CardDescription>Enable or disable major features of the application.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <SettingRow id="restaurant" title="Restaurant (Floor Plan)" description="Manage table layout and dine-in orders." isChecked={settings.restaurant} onCheckedChange={handleSettingChange('restaurant')} />
                         <SettingRow id="reservations" title="Reservation Management" description="Allow customers to book tables in advance." isChecked={settings.reservations} onCheckedChange={handleSettingChange('reservations')} />
                         <SettingRow id="inventory" title="Inventory Management" description="Track ingredient stock levels." isChecked={settings.inventory} onCheckedChange={handleSettingChange('inventory')} />
                         <SettingRow id="crm" title="CRM & Loyalty Program" description="Manage customer relationships and rewards." isChecked={settings.crm} onCheckedChange={handleSettingChange('crm')} />
-                        <SettingRow id="delivery" title="Delivery Driver Tracking" description="Track delivery drivers in real-time." isChecked={settings.deliveryTracking} onCheckedChange={handleSettingChange('deliveryTracking')} />
                         <SettingRow id="suppliers" title="Suppliers & Purchase Orders" description="Manage suppliers and purchase orders." isChecked={settings.suppliers} onCheckedChange={handleSettingChange('suppliers')} />
                     </CardContent>
                 </Card>
@@ -127,7 +136,7 @@ function SettingsPage() {
                     <CardContent className="space-y-4">
                         <SettingRow id="online-ordering" title="Online Orders" description="Accept orders from your website." isChecked={settings.onlineOrdering} onCheckedChange={handleSettingChange('onlineOrdering')} />
                         <SettingRow id="collection" title="Collection / Takeaway" description="Allow customers to order for pickup." isChecked={settings.collection} onCheckedChange={handleSettingChange('collection')} />
-                        <SettingRow id="delivery-channel" title="Delivery" description="Offer a delivery service." isChecked={settings.deliveryChannel} onCheckedChange={handleSettingChange('deliveryChannel')} />
+                        <SettingRow id="delivery" title="Delivery" description="Offer a delivery service." isChecked={settings.delivery} onCheckedChange={handleSettingChange('delivery')} />
                     </CardContent>
                 </Card>
                  <Card>

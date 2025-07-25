@@ -24,25 +24,37 @@ import { Button } from "./ui/button"
 
 const allMenuItems = [
   { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/collection", label: "Collection", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/live-orders", label: "Live Orders", icon: Radio, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "restaurant" },
+  { href: "/collection", label: "Collection", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "collection" },
+  { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "delivery" },
+  { href: "/live-orders", label: "Live Orders", icon: Radio, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] }, // Often dynamic, so no setting
+  { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "onlineOrdering" },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/customers", label: "Customers (CRM)", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
+  { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "reservations" },
+  { href: "/customers", label: "Customers (CRM)", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[], setting: "crm" },
   { href: "/team", label: "Team (HR)", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
-  { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
+  { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[], setting: "inventory" },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },
-]
+];
+
+
+const defaultSettings = {
+    reservations: true,
+    inventory: true,
+    crm: false,
+    delivery: true,
+    onlineOrdering: true,
+    collection: true,
+    restaurant: true,
+};
 
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   // This is a local state to re-render the component when the role changes.
   const [currentUser, setCurrentUser] = useState(mockUser);
+  const [appSettings, setAppSettings] = useState(defaultSettings);
 
   useEffect(() => {
     // This effect ensures the sidebar updates if the user is changed in another tab
@@ -50,6 +62,10 @@ export function AppSidebar() {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             setCurrentUser(JSON.parse(storedUser));
+        }
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            setAppSettings(JSON.parse(savedSettings));
         }
     };
 
@@ -86,7 +102,19 @@ export function AppSidebar() {
     router.push('/login');
   }
 
-  const menuItems = allMenuItems.filter(item => hasPermission(currentUser.role, item.requiredRoles));
+  const menuItems = allMenuItems.filter(item => {
+    // Check role permission
+    const hasRolePermission = hasPermission(currentUser.role, item.requiredRoles);
+    if (!hasRolePermission) return false;
+    
+    // Check if the feature is enabled in settings
+    // @ts-ignore
+    if (item.setting && !appSettings[item.setting]) {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon">
