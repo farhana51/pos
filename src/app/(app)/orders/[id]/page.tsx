@@ -709,7 +709,8 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         toast({
             title: "Order Updated",
             description: "The order items and discount have been saved.",
-        })
+        });
+        router.push('/dashboard');
     }
     
   const handlePartialPayment = (amount: number, method: PaymentMethod) => {
