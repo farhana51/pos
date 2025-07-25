@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import withAuth from "@/components/withAuth";
 import { MenuItemDialog } from "./_components/MenuItemDialog";
 
-function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuItem) => void }) {
+function MenuTable({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (item: MenuItem) => void, onDelete: (id: number) => void }) {
   return (
     <Table>
       <TableHeader>
@@ -32,15 +32,18 @@ function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuIt
             <TableCell className="font-medium">
               <div>{item.name}</div>
               <div className="text-xs text-muted-foreground truncate max-w-xs">{item.description}</div>
-              {item.subcategory && <Badge variant="secondary" className="mt-1">{item.subcategory}</Badge>}
+              {item.subcategory && <Badge variant="outline" className="mt-1">{item.subcategory}</Badge>}
             </TableCell>
             <TableCell>£{item.price.toFixed(2)}</TableCell>
             <TableCell>
-              {item.addons?.map(addon => (
+              {item.addons?.slice(0, 2).map(addon => (
                 <div key={addon.id} className="text-xs text-muted-foreground">
                   {addon.name} (+£{addon.price.toFixed(2)})
                 </div>
               ))}
+              {item.addons && item.addons.length > 2 && (
+                <div className="text-xs text-muted-foreground">...and {item.addons.length - 2} more.</div>
+              )}
             </TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
@@ -51,7 +54,7 @@ function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuIt
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => onEdit(item)}>Edit</DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive">Delete</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -80,11 +83,16 @@ function MenuPage() {
   };
 
   const handleSaveItem = (item: MenuItem) => {
-    if(editingItem) {
+    if(item.id) { // If item has an ID, it's an edit
         setMenu(menu.map(m => m.id === item.id ? item : m));
-    } else {
-        setMenu([...menu, { ...item, id: menu.length + 1 }]);
+    } else { // No ID, it's a new item
+        const newItem = { ...item, id: Math.max(...menu.map(m => m.id), 0) + 1 };
+        setMenu([...menu, newItem]);
     }
+  }
+
+  const handleDeleteItem = (id: number) => {
+      setMenu(menu.filter(m => m.id !== id));
   }
   
   return (
@@ -109,8 +117,12 @@ function MenuPage() {
                     ))}
                 </TabsList>
                 {categories.map(category => (
-                    <TabsContent key={category} value={category}>
-                        <MenuTable items={menu.filter(item => item.category === category)} onEdit={handleEditItem} />
+                    <TabsContent key={category} value={category} className="mt-4">
+                        <MenuTable 
+                            items={menu.filter(item => item.category === category)} 
+                            onEdit={handleEditItem}
+                            onDelete={handleDeleteItem}
+                        />
                     </TabsContent>
                 ))}
                 </Tabs>
