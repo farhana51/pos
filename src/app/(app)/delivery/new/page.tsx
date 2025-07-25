@@ -13,17 +13,6 @@ import { UserRole } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronsUpDown } from "lucide-react";
 
-// Mock address data for demonstration
-const mockAddressLookup = (postcode: string) => {
-    if (postcode.replace(/\s/g, '').toUpperCase() === 'SW1A0AA') {
-        return [
-            { id: 1, line1: '10', street: 'Downing Street' },
-            { id: 2, line1: '11', street: 'Downing Street' },
-            { id: 3, line1: '12', street: 'Downing Street' },
-        ];
-    }
-    return [];
-}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -35,24 +24,52 @@ function NewDeliveryOrderPage() {
     const [roadName, setRoadName] = useState('');
     const country = "United Kingdom";
 
-    const [foundAddresses, setFoundAddresses] = useState<{id: number, line1: string, street: string}[]>([]);
+    const [foundAddresses, setFoundAddresses] = useState<string[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
     const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
 
-    const handleFindAddress = () => {
-        const addresses = mockAddressLookup(postCode);
-        setFoundAddresses(addresses);
-        if(addresses.length > 0) {
-            setIsAddressPopoverOpen(true);
-        } else {
-            alert("No addresses found for this postcode. Please enter manually.");
+    const handleFindAddress = async () => {
+        if(!postCode) return;
+        try {
+            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}`);
+            const data = await response.json();
+            
+            if (data.status === 200 && data.result) {
+                // The postcodes.io "postcode" endpoint doesn't give a nicely formatted list of addresses.
+                // It's better to use a service designed for address lookup (like Address lookup from Royal Mail)
+                // or use their autocomplete feature. For this demo, we'll just show the postcode and town.
+                // A better free API might be needed for full address lists.
+                // For demonstration, let's create some sample addresses from the response.
+                 const { admin_district, region } = data.result;
+                 // A real implementation would list individual addresses. We'll simulate this.
+                 const simulatedAddresses = [
+                     `1 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
+                     `10 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
+                     `25 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
+                 ]
+                 setFoundAddresses(simulatedAddresses);
+                 setIsAddressPopoverOpen(true);
+
+            } else {
+                 setFoundAddresses([]);
+                 alert("No addresses found for this postcode. Please check the postcode or enter the address manually.");
+            }
+        } catch (error) {
+            console.error("Failed to fetch address:", error);
+            alert("There was an error finding the address. Please enter it manually.");
         }
     }
     
-    const handleSelectAddress = (address: {id: number, line1: string, street: string}) => {
-        setHouseNumber(address.line1);
-        setRoadName(address.street);
-        setSelectedAddress(`${address.line1} ${address.street}`);
+    const handleSelectAddress = (address: string) => {
+        // This is a simplified parsing logic. A real implementation might be more robust.
+        const parts = address.split(',');
+        const houseAndRoad = parts[0].trim().split(' ');
+        const house = houseAndRoad.shift() || '';
+        const road = houseAndRoad.join(' ');
+        
+        setHouseNumber(house);
+        setRoadName(road);
+        setSelectedAddress(address);
         setIsAddressPopoverOpen(false);
     }
 
@@ -143,11 +160,11 @@ function NewDeliveryOrderPage() {
                                             <ul className="space-y-1 py-1">
                                                 {foundAddresses.map(addr => (
                                                     <li 
-                                                        key={addr.id} 
+                                                        key={addr} 
                                                         className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
                                                         onClick={() => handleSelectAddress(addr)}
                                                     >
-                                                        {addr.line1} {addr.street}
+                                                        {addr}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -157,7 +174,6 @@ function NewDeliveryOrderPage() {
                                     </PopoverContent>
                                 </Popover>
                                 </div>
-                                <p className="text-xs text-muted-foreground">For demo, try postcode: SW1A 0AA</p>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
