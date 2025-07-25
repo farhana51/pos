@@ -513,27 +513,49 @@ function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     
+    // For Table orders
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
 
-    if (!tableIdParam || !guestsParam) {
+    // For Collection orders
+    const orderTypeParam = searchParams.get('type') as Order['type'] | null;
+    const customerNameParam = searchParams.get('customerName');
+
+    if (!orderTypeParam && (!tableIdParam || !guestsParam)) {
         // Handle case where params are missing, maybe redirect or show an error
-        return <div>Error: Missing table or guest information.</div>;
+        return <div>Error: Missing order information.</div>;
+    }
+
+    const initialOrderState = () => {
+        if (orderTypeParam === 'Collection') {
+            return {
+                tableId: 0, // No table for collection
+                items: [],
+                type: 'Collection' as const,
+                createdAt: new Date().toISOString(),
+                customerName: customerNameParam,
+            }
+        }
+        return {
+             tableId: parseInt(tableIdParam!, 10),
+             items: [],
+             type: 'Table' as const,
+             createdAt: new Date().toISOString(),
+             guests: parseInt(guestsParam!, 10),
+        }
     }
     
-    const tableId = parseInt(tableIdParam, 10);
-    const guests = parseInt(guestsParam, 10);
-    
-    const [order, setOrder] = useState<Omit<Order, 'id' | 'status'>>({
-        tableId: tableId,
-        items: [],
-        type: 'Table',
-        createdAt: new Date().toISOString(),
-        guests: guests,
-    });
+    const [order, setOrder] = useState<Omit<Order, 'id' | 'status'>>(initialOrderState);
     
     // State to manage which menu item is being customized in the dialog
     const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
+
+    const getPageTitle = () => {
+        if (order.type === 'Collection') {
+            return `New Take Away Order: ${order.customerName}`
+        }
+        return `New Order - Table ${order.tableId} (Guests: ${order.guests})`
+    }
 
     const handleUpdateItems = (newItems: OrderItem[]) => {
       setOrder(prev => ({...prev, items: newItems}));
@@ -558,11 +580,14 @@ function NewOrderPage() {
         // In a real app, this would be a server action to create the order
         const newOrderId = Math.floor(Math.random() * 1000) + 200; // Mock ID
         mockOrders.push({ ...order, id: newOrderId, status: 'Pending' });
-        // Update table status
-        const tableIndex = mockTables.findIndex(t => t.id === tableId);
-        if (tableIndex !== -1) {
-            mockTables[tableIndex].status = 'Occupied';
-            mockTables[tableIndex].orderId = newOrderId;
+
+        if (order.type === 'Table') {
+            // Update table status
+            const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+            if (tableIndex !== -1) {
+                mockTables[tableIndex].status = 'Occupied';
+                mockTables[tableIndex].orderId = newOrderId;
+            }
         }
         router.push(`/landing`);
     }
@@ -578,7 +603,7 @@ function NewOrderPage() {
 
     return (
         <>
-            <PageHeader title={`New Order - Table ${tableId} (Guests: ${guests})`} />
+            <PageHeader title={getPageTitle()} />
             <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
                 <div className="md:col-span-2 h-full">
                     <MenuGrid onSelectItem={handleSelectItem} />
@@ -618,6 +643,9 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         const savedSettings = localStorage.getItem('discountSettings');
         if (savedSettings) {
             setDiscountSettings(JSON.parse(savedSettings));
+        } else {
+            // Enable by default for demo
+            setDiscountSettings({ enabled: true, type: 'amount' });
         }
     }
   }, []);
@@ -746,11 +774,13 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         mockOrders[orderIndex].discount = discountApplied;
     }
 
-    // Update table status
-    const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
-    if(tableIndex !== -1) {
-        mockTables[tableIndex].status = 'Available';
-        delete mockTables[tableIndex].orderId;
+    // Update table status if it's a table order
+    if (order.type === 'Table') {
+        const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+        if(tableIndex !== -1) {
+            mockTables[tableIndex].status = 'Available';
+            delete mockTables[tableIndex].orderId;
+        }
     }
 
     router.push('/dashboard');
@@ -758,7 +788,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
 
   return (
     <>
-      <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
+      <PageHeader title={`Order #${order.id} - ${order.type === 'Table' ? `Table ${order.tableId}` : (order.customerName || 'Take Away')}`}>
         <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Receipt</Button>
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
@@ -793,7 +823,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
                     )}
                     <div className="flex flex-col gap-2 pt-4 border-t">
                         <BillSplittingDialog order={order} onPartialPay={handlePartialPayment} />
-                        {canApplyDiscount && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
+                        {canApplyDiscount && order.type === 'Table' && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
                         {canApplyDiscount && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
                     </div>
                     <div className="pt-4 border-t">

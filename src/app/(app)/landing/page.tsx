@@ -21,7 +21,7 @@ const allServiceOptions = [
   {
     title: "Take Away",
     icon: Home,
-    href: "/collection",
+    href: "/collection/new",
     roles: ['Admin', 'Advanced', 'Basic']
   },
   {

@@ -65,6 +65,8 @@ export interface Order {
   guests?: number;
   discount?: number;
   payments?: Payment[];
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface Reservation {
