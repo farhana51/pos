@@ -689,7 +689,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
 
 function OrderDetailsPage() {
   const params = useParams<{ id: string }>();
-  const id = use(params).id;
+  const id = params.id;
 
   if (id === 'new') {
     return <NewOrderPage />;
