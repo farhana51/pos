@@ -18,16 +18,18 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm shadow-2xl">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+          <CardDescription>
+            For demo purposes, you can enter any email and password. You can switch user roles in the sidebar.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="manager@example.com" required />
+            <Input id="email" type="email" placeholder="admin@example.com" required defaultValue="admin@example.com" />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required defaultValue="password" />
           </div>
         </CardContent>
         <CardFooter>
