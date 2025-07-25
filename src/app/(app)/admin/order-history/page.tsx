@@ -14,12 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Car, CreditCard, Eye, Globe, HandCoins, Home, Package, Printer, Tag, Utensils } from "lucide-react";
 
-const statusColors: Record<Order['status'], string> = {
-    'Pending': 'bg-amber-500/20 text-amber-500',
-    'Paid': 'bg-primary text-primary-foreground',
-    'Cancelled': 'bg-destructive/20 text-destructive',
-}
-
 const typeIcons: Record<Order['type'], React.ElementType> = {
     'Table': Utensils,
     'Collection': Home,
@@ -77,7 +71,6 @@ function OrderHistoryPage() {
                                     <TableHead>Type</TableHead>
                                     <TableHead>Payment Method</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
-                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -104,21 +97,10 @@ function OrderHistoryPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">£{calculateTotal(order).toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <Badge className={statusColors[order.status]}>
-                                                    {order.status === 'Paid' ? 'Confirmed' : order.status}
-                                                </Badge>
-                                            </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
-                                                     <Button variant="outline" size="sm">
-                                                        <Printer className="mr-2 h-3 w-3" />
-                                                        Print
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/orders/${order.id}`)}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
+                                                <Button variant="ghost" size="icon" onClick={() => router.push(`/orders/${order.id}`)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );
