@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Armchair, Circle, Utensils, Square, Minus, Plus, Save } from "lucide-react";
+import { Users, Armchair, Circle, Utensils, Square, Minus, Plus, Save, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 
 
 const statusConfig: Record<TableStatus, { border: string; bg: string; label: string; }> = {
@@ -152,8 +156,8 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
                 )}
             </CardContent>
              <div className="p-6 pt-0">
-                <Button className="w-full" asChild disabled={!selectedTable}>
-                   <Link href={order ? `/orders/${order.id}` : `/orders/new?tableId=${selectedTable?.id}`}>
+                <Button className="w-full" asChild disabled={!selectedTable || selectedTable.status !== 'Occupied'}>
+                   <Link href={order ? `/orders/${order.id}` : '#'}>
                      {order ? 'View / Edit Order' : 'Create New Order'}
                    </Link>
                 </Button>
@@ -161,6 +165,54 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
         </Card>
     );
 }
+
+function GuestsDialog({ table, onConfirm }: { table: Table | null; onConfirm: (guests: number) => void; }) {
+    const [guests, setGuests] = useState(table?.capacity || 1);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (table) {
+            setIsOpen(true);
+            setGuests(table.capacity);
+        } else {
+            setIsOpen(false);
+        }
+    }, [table]);
+
+    const handleConfirm = () => {
+        onConfirm(guests);
+        setIsOpen(false);
+    }
+
+    if (!table) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>How many guests for Table {table.id}?</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <Label htmlFor="guests-input">Number of Guests</Label>
+                    <Input 
+                        id="guests-input"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={guests}
+                        onChange={(e) => setGuests(parseInt(e.target.value, 10))}
+                        className="text-center text-2xl h-16"
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                    <Button onClick={handleConfirm} disabled={!guests || guests < 1 || guests > 99}>Confirm Guests</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 const floorPlanBackgrounds: Record<string, {url: string, hint: string}> = {
     "Main Floor": { url: 'https://placehold.co/1200x800.png', hint: 'wood floor' },
@@ -171,25 +223,37 @@ export default function DashboardPage() {
   const [tables, setTables] = useState<Table[]>(initialMockTables);
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
   
   const floorPlanRef = useRef<HTMLDivElement>(null);
   const draggingTable = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
   const selectedTable = tables.find(t => t.id === selectedTableId) ?? null;
+  const [tableForGuestInput, setTableForGuestInput] = useState<Table | null>(null);
+
   const floors = [...new Set(tables.map(t => t.floor))];
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
     e.preventDefault();
+    const table = tables.find(t => t.id === tableId);
+    
+    // Select the table first
     setSelectedTableId(tableId);
-    const tableElement = e.currentTarget;
-    const rect = tableElement.getBoundingClientRect();
-    draggingTable.current = {
-      id: tableId,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+
+    // If table is available, open guest dialog. Otherwise, handle dragging.
+    if (table && table.status === 'Available') {
+        setTableForGuestInput(table);
+    } else {
+        const tableElement = e.currentTarget;
+        const rect = tableElement.getBoundingClientRect();
+        draggingTable.current = {
+          id: tableId,
+          offsetX: e.clientX - rect.left,
+          offsetY: e.clientY - rect.top,
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -237,6 +301,13 @@ export default function DashboardPage() {
     });
   }
 
+  const handleConfirmGuests = (guests: number) => {
+        if (tableForGuestInput) {
+            router.push(`/orders/new?tableId=${tableForGuestInput.id}&guests=${guests}`);
+        }
+        setTableForGuestInput(null);
+  }
+
   return (
     <>
       <PageHeader title="Restaurant Floor Plan">
@@ -281,6 +352,10 @@ export default function DashboardPage() {
         <div className="md:col-span-1">
             <OrderPanel selectedTable={selectedTable} />
         </div>
+        <GuestsDialog 
+            table={tableForGuestInput}
+            onConfirm={handleConfirmGuests}
+        />
       </main>
     </>
   );

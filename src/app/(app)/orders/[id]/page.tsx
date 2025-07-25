@@ -439,12 +439,14 @@ function NewOrderPage({ params }: { params: { id: string } }) {
     const { toast } = useToast();
     
     const tableId = parseInt(searchParams.get('tableId')!, 10);
+    const guests = parseInt(searchParams.get('guests')!, 10);
     
     const [order, setOrder] = useState<Omit<Order, 'id' | 'status'>>({
         tableId: tableId,
         items: [],
         type: 'Table',
         createdAt: new Date().toISOString(),
+        guests: guests,
     });
     
     const handleUpdateItems = (newItems: OrderItem[]) => {
@@ -504,6 +506,7 @@ function NewOrderPage({ params }: { params: { id: string } }) {
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
                             <div className="flex justify-between"><span>Table:</span><span className="font-medium">{tableId}</span></div>
+                            <div className="flex justify-between"><span>Guests:</span><span className="font-medium">{guests}</span></div>
                             <div className="flex justify-between"><span>Type:</span><Badge variant="secondary">Table</Badge></div>
                              <div className="flex justify-between font-bold text-lg">
                                 <span>Total:</span>
@@ -580,6 +583,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between"><span>Table:</span><span className="font-medium">{order.tableId}</span></div>
+              {order.guests && <div className="flex justify-between"><span>Guests:</span><span className="font-medium">{order.guests}</span></div>}
               <div className="flex justify-between"><span>Type:</span><Badge variant="secondary">{order.type}</Badge></div>
               <div className="flex justify-between"><span>Time:</span><span className="font-medium">{format(new Date(order.createdAt), 'HH:mm')}</span></div>
               <div className="flex justify-between"><span>Date:</span><span className="font-medium">{format(new Date(order.createdAt), 'dd/MM/yyyy')}</span></div>
