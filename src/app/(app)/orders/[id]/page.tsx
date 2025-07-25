@@ -191,7 +191,7 @@ function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdat
            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
                 <ShoppingCart className="w-16 h-16 mb-4" />
                 <p className="font-semibold">Start adding products</p>
-                <p className="text-sm">Select items from the right to build the order.</p>
+                <p className="text-sm">Select items from the left to build the order.</p>
             </div>
         )}
       </CardContent>
@@ -556,11 +556,11 @@ function NewOrderPage({ params }: { params: { id: string } }) {
                 </Button>
             </PageHeader>
             <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
-                <div className="md:col-span-1 h-full">
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
-                </div>
                  <div className="md:col-span-2 h-full">
                     <MenuGrid onSelectItem={handleSelectItem} />
+                </div>
+                <div className="md:col-span-1 h-full">
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
                 </div>
                  {itemToCustomize && (
                     <AddItemDialog
