@@ -1,7 +1,7 @@
 
 'use client'
 
-import { ArrowRight, BarChart2, BookOpen, Clock, HardHat, Home, Key, LayoutDashboard, LogOut, Package, Settings, Store, Users } from "lucide-react";
+import { BarChart2, BookOpen, Clock, HardHat, Home, Key, LayoutDashboard, LogOut, Package, Settings, Store, Users } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,15 +72,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="relative flex flex-col h-screen w-full">
-        <Image 
-            src="https://placehold.co/1920x1080.png"
-            alt="Blurred background"
-            fill
-            className="object-cover"
-            data-ai-hint="restaurant background"
-        />
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
+    <div className="relative flex flex-col h-screen w-full bg-background">
         <div className="relative z-10 flex flex-col h-full">
             <header className="p-4 flex justify-between items-center">
                  <div className="flex items-center gap-2">
@@ -101,7 +93,7 @@ export default function LandingPage() {
                         {serviceOptions.map((option) => (
                            <Link key={option.title} href={option.href} passHref>
                                 <Card
-                                    className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card/80 cursor-pointer h-40 flex flex-col items-center justify-center"
+                                    className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-secondary cursor-pointer h-40 flex flex-col items-center justify-center"
                                 >
                                     <CardContent className="flex flex-col items-center justify-center p-6">
                                         <option.icon className={`h-12 w-12 mb-2 ${option.color}`} strokeWidth={1.5} />

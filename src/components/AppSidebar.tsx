@@ -21,18 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useState } from "react"
 
 const allMenuItems = [
-  { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/collection", label: "Collection", icon: Package, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
-  { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/customers", label: "Customers", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/team", label: "Team", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
-  { href: "/display", label: "Customer Display", icon: Monitor, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },
 ]
 
@@ -60,7 +51,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 p-2">
             <Utensils className="h-8 w-8 text-primary" />
             <span className="font-headline text-xl group-data-[collapsible=icon]:hidden">
-              Gastronomic Edge
+              Pizzeria
             </span>
         </div>
       </SidebarHeader>
