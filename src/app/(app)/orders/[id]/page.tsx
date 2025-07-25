@@ -683,7 +683,8 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         // In a real app, this would be a server action to update the order
         const orderIndex = mockOrders.findIndex(o => o.id === order.id);
         if (orderIndex > -1) {
-            mockOrders[orderIndex] = order;
+            const updatedOrder = { ...order, discount: appliedDiscount };
+            mockOrders[orderIndex] = updatedOrder;
         }
         router.push(`/dashboard`);
     }
