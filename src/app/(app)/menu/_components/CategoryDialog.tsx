@@ -133,6 +133,9 @@ export function CategoryDialog({ isOpen, setIsOpen, categories: initialCategorie
                                                     </Button>
                                                 </div>
                                             ))}
+                                            {category.subcategories.length === 0 && (
+                                                <p className="text-xs text-muted-foreground text-center py-2">No subcategories yet.</p>
+                                            )}
                                         </div>
                                          <div className="flex gap-2 pt-2">
                                             <Input 
