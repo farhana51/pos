@@ -31,7 +31,7 @@ function NewDeliveryOrderPage() {
     const handleFindAddress = async () => {
         if(!postCode) return;
         try {
-            // Use the /addresses endpoint to get a list of addresses for a full postcode
+            // Use the /postcodes endpoint to get a list of addresses for a full postcode
             const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}`);
             const data = await response.json();
             
