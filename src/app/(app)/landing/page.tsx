@@ -1,13 +1,14 @@
 
 'use client'
 
-import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar } from "lucide-react";
+import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { mockUser } from "@/lib/data";
+import { logoutUser, mockUser } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const allServiceOptions = [
   {
@@ -59,6 +60,12 @@ const allServiceOptions = [
     roles: ['Admin', 'Advanced']
   },
   {
+    title: "Reports",
+    icon: BarChart2,
+    href: "/admin/reports",
+    roles: ['Admin']
+  },
+  {
     title: "Settings",
     icon: Settings,
     href: "/admin/settings",
@@ -70,22 +77,22 @@ export default function LandingPage() {
   const { toast } = useToast();
   const serviceOptions = allServiceOptions.filter(option => option.roles.includes(mockUser.role));
   const isBasicUser = mockUser.role === 'Basic';
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logoutUser();
+    router.push('/login');
+  };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-background">
-      <header className="p-4 flex justify-between items-center border-b">
-        <h1 className="text-2xl font-bold font-headline">Gastronomic Edge</h1>
-         <div>
-            <span>Hi, {mockUser.name} ({mockUser.role})</span>
-        </div>
-      </header>
+    <div className="flex flex-col h-full w-full bg-background">
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className={cn("w-full", isBasicUser ? "max-w-4xl" : "max-w-6xl")}>
             <div className={cn(
                 "grid gap-6",
                  isBasicUser 
                     ? "grid-cols-1 md:grid-cols-4" 
-                    : "md:grid-cols-3 lg:grid-cols-5"
+                    : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5"
             )}>
                 {serviceOptions.map((option) => (
                    <Link key={option.title} href={option.href} passHref>
@@ -99,6 +106,18 @@ export default function LandingPage() {
                         </Card>
                     </Link>
                 ))}
+                 {/* Logout card for basic/advanced users */}
+                {(mockUser.role === 'Basic' || mockUser.role === 'Advanced') && (
+                    <Card
+                        onClick={handleLogout}
+                        className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card cursor-pointer h-40 flex flex-col items-center justify-center text-center p-4"
+                    >
+                        <CardContent className="flex flex-col items-center justify-center p-0">
+                            <LogOut className={`h-12 w-12 mb-2 text-destructive`} strokeWidth={1.5} />
+                            <CardTitle className="text-lg font-semibold">Logout</CardTitle>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
       </main>

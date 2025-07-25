@@ -2,8 +2,8 @@
 'use client'
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe, BarChart } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -19,64 +19,7 @@ import { cn } from "@/lib/utils"
 import { UserRole } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { useEffect, useState } from "react"
-
-const allServiceOptions = [
-  {
-    title: "Restaurant",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-    roles: ['Admin', 'Advanced', 'Basic']
-  },
-  {
-    title: "Take Away",
-    icon: Home,
-    href: "/collection",
-    roles: ['Admin', 'Advanced', 'Basic']
-  },
-  {
-    title: "Delivery",
-    icon: Car,
-    href: "/delivery",
-    roles: ['Admin', 'Advanced', 'Basic']
-  },
-  {
-    title: "Online Order",
-    icon: Globe,
-    href: "/online-orders",
-    roles: ['Admin', 'Advanced']
-  },
-  {
-    title: "Reservation",
-    icon: Calendar,
-    href: "/reservations",
-    roles: ['Admin', 'Advanced', 'Basic']
-  },
-   {
-    title: "CRM",
-    icon: Contact,
-    href: "/customers",
-    roles: ['Admin', 'Advanced']
-  },
-  {
-    title: "HR",
-    icon: Users,
-    href: "/team",
-    roles: ['Admin']
-  },
-  {
-    title: "Inventory",
-    icon: Package,
-    href: "/inventory",
-    roles: ['Admin', 'Advanced']
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    href: "/admin/settings",
-    roles: ['Admin']
-  },
-];
-
+import { Button } from "./ui/button"
 
 const allMenuItems = [
   { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
@@ -95,6 +38,7 @@ const allMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   // This is a local state to re-render the component when the role changes.
   const [currentUser, setCurrentUser] = useState(mockUser);
 
@@ -137,6 +81,7 @@ export function AppSidebar() {
 
   const handleLogout = () => {
     logoutUser();
+    router.push('/login');
   }
 
   const menuItems = allMenuItems.filter(item => hasPermission(currentUser.role, item.requiredRoles));

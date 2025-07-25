@@ -5,9 +5,41 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { useIdle } from "@/hooks/use-idle";
 import { usePathname, useRouter } from "next/navigation";
-import { mockUser } from "@/lib/data";
+import { logoutUser, mockUser } from "@/lib/data";
 import { useEffect, useState } from "react";
 import type { User } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { LogOut, Utensils } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+
+function AppHeader() {
+  const router = useRouter();
+  const handleLogout = () => {
+    logoutUser();
+    router.push('/login');
+  };
+
+  return (
+    <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 sticky top-0 z-20">
+      <div className="flex items-center gap-2">
+        <Utensils className="h-6 w-6 text-primary" />
+        <span className="font-headline text-lg font-bold">Gastronomic Edge</span>
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-muted-foreground hidden sm:inline">
+          Hi, {mockUser.name} ({mockUser.role})
+        </span>
+        <ThemeToggle />
+        <Button variant="outline" size="icon" onClick={handleLogout}>
+          <LogOut className="h-4 w-4" />
+          <span className="sr-only">Logout</span>
+        </Button>
+      </div>
+    </header>
+  );
+}
+
 
 export default function AppLayout({
   children,
@@ -51,29 +83,34 @@ export default function AppLayout({
     idleTime: 60,
   });
 
-  // Landing page has its own layout
-  if (pathname === '/landing') {
-      return <div className="h-full">{children}</div>
-  }
-
-  // Basic and Advanced users get a full-screen view without the sidebar
-  if (user.role === 'Basic' || user.role === 'Advanced') {
+  // Landing page has a special layout for basic/advanced users
+  if (pathname === '/landing' && (user.role === 'Basic' || user.role === 'Advanced')) {
     return (
-        <div className="flex-1 overflow-y-auto">
-            {children}
+        <div className="flex flex-col h-screen">
+            <AppHeader />
+            <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
-    );
+    )
   }
 
   // Admin users get the full sidebar layout
+  if(user.role === 'Admin') {
+    return (
+      <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+              <div className="flex-1 overflow-y-auto">
+                  {children}
+              </div>
+          </SidebarInset>
+      </SidebarProvider>
+    )
+  }
+
+  // Fallback for Basic/Advanced on other pages
   return (
-    <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-            <div className="flex-1 overflow-y-auto">
-                {children}
-            </div>
-        </SidebarInset>
-    </SidebarProvider>
+     <div className="flex-1 overflow-y-auto">
+        {children}
+    </div>
   )
 }
