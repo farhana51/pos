@@ -1,13 +1,14 @@
 
+
 'use client'
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, setUserRole, mockUser } from '@/lib/data';
-import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType } from '@/lib/types';
+import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X } from 'lucide-react';
@@ -22,7 +23,8 @@ import withAuth from '@/components/withAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
-const getOrderById = (id: number) => {
+const getOrderById = (id: number): Order | undefined => {
+    if (isNaN(id)) return undefined;
     const order = getOrderData(id);
     if(order) return order;
     return mockOrders.find(o => o.id === id);
@@ -377,7 +379,7 @@ function PaymentDialog({ total }: { total: number }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                 <Button className="bg-accent text-accent-foreground hover:bg-accent/90"><Sparkles className="mr-2" /> Finalize Bill</Button>
+                 <Button className="bg-green-600 text-white hover:bg-green-700"><Sparkles className="mr-2" /> Finalize Bill</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -413,7 +415,7 @@ function CancelOrderDialog({ orderId, onCancel }: { orderId: number, onCancel: (
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/20">Cancel Order</Button>
+                <Button variant="destructive" className="bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/20">Cancel Order</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -431,21 +433,99 @@ function CancelOrderDialog({ orderId, onCancel }: { orderId: number, onCancel: (
     );
 }
 
-function OrderDetailsPage({ params }: { params: { id: string } }) {
+function NewOrderPage({ params }: { params: { id: string } }) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { toast } = useToast();
+    
+    const tableId = parseInt(searchParams.get('tableId')!, 10);
+    
+    const [order, setOrder] = useState<Omit<Order, 'id' | 'status'>>({
+        tableId: tableId,
+        items: [],
+        type: 'Table',
+        createdAt: new Date().toISOString(),
+    });
+    
+    const handleUpdateItems = (newItems: OrderItem[]) => {
+      setOrder(prev => ({...prev, items: newItems}));
+    }
+
+    const handleCreateOrder = () => {
+        // In a real app, this would be a server action to create the order
+        const newOrderId = Math.floor(Math.random() * 1000) + 200; // Mock ID
+        console.log("Creating new order:", { ...order, id: newOrderId });
+        mockOrders.push({ ...order, id: newOrderId, status: 'Pending' });
+        // Update table status
+        const tableIndex = mockTables.findIndex(t => t.id === tableId);
+        if (tableIndex !== -1) {
+            mockTables[tableIndex].status = 'Occupied';
+            mockTables[tableIndex].orderId = newOrderId;
+        }
+
+        toast({
+            title: "Order Created",
+            description: `Order #${newOrderId} has been created for Table #${tableId}.`,
+        });
+        router.push(`/orders/${newOrderId}`);
+    }
+
+    const grandTotal = order.items.reduce((sum, item) => {
+        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+        const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
+        return sum + itemTotal + vat;
+    }, 0);
+
+
+    return (
+        <>
+            <PageHeader title={`New Order - Table ${tableId}`}>
+                <Button onClick={handleCreateOrder} disabled={order.items.length === 0}>
+                    Create Order
+                </Button>
+            </PageHeader>
+            <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8">
+                <div className="md:col-span-2 space-y-6">
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Add Items</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap gap-2">
+                            <AddItemDialog onAddItem={(item) => handleUpdateItems([...order.items, item])} orderId={0} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span>Table:</span><span className="font-medium">{tableId}</span></div>
+                            <div className="flex justify-between"><span>Type:</span><Badge variant="secondary">Table</Badge></div>
+                             <div className="flex justify-between font-bold text-lg">
+                                <span>Total:</span>
+                                <span>£{grandTotal.toFixed(2)}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </main>
+        </>
+    );
+}
+
+
+function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [order, setOrder] = useState(() => {
-    const orderId = parseInt(params.id, 10);
-    return getOrderById(orderId);
-  });
+  const [order, setOrder] = useState<Order>(initialOrder);
   const hasAdvancedPermission = ['Admin', 'Advanced'].includes(mockUser.role);
-
-  if (!order) {
-    notFound();
-  }
   
   const handleUpdateItems = (newItems: OrderItem[]) => {
-      setOrder(prev => prev ? {...prev, items: newItems} : null);
+      setOrder(prev => ({...prev, items: newItems}));
   }
 
   const handlePrint = () => {
@@ -466,21 +546,12 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
     router.push('/dashboard');
   }
 
- const subtotal = order.items.reduce((sum, item) => {
+  const grandTotal = order.items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-    return sum + (item.menuItem.price + addonsTotal) * item.quantity;
+    const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+    const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
+    return sum + itemTotal + vat;
   }, 0);
-
-  const totalVat = order.items.reduce((sum, item) => {
-      const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-      const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-      if (item.menuItem.vatRate > 0) {
-          return sum + (itemTotal * (item.menuItem.vatRate / 100));
-      }
-      return sum;
-  }, 0);
-
-  const grandTotal = subtotal + totalVat;
 
 
   return (
@@ -530,6 +601,22 @@ function OrderDetailsPage({ params }: { params: { id: string } }) {
     </>
   );
 }
+
+
+function OrderDetailsPage({ params }: { params: { id: string } }) {
+  if (params.id === 'new') {
+    return <NewOrderPage params={params} />;
+  }
+  
+  const order = getOrderById(parseInt(params.id, 10));
+
+  if (!order) {
+    notFound();
+  }
+
+  return <ExistingOrderPage order={order} />;
+}
+
 
 // Wrapping with withAuth HOC and specifying required roles
 export default withAuth(OrderDetailsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);

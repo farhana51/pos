@@ -2,16 +2,18 @@
 'use client'
 
 import Link from "next/link";
-import { useState } from 'react';
-import { Users, Armchair, Circle, Utensils, Square, Minus, Plus } from "lucide-react";
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Armchair, Circle, Utensils, Square, Minus, Plus, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { mockTables, getOrderByTableId } from "@/lib/data";
+import { mockTables as initialMockTables, getOrderByTableId } from "@/lib/data";
 import type { Table, TableStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+
 
 const statusConfig: Record<TableStatus, { border: string; bg: string; label: string; }> = {
   Available: { border: "border-green-500", bg: "bg-green-500/10", label: "Available" },
@@ -20,34 +22,28 @@ const statusConfig: Record<TableStatus, { border: string; bg: string; label: str
   Dirty: { border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Needs Cleaning" },
 };
 
-function TableVisual({ table, isSelected, onClick }: { table: Table; isSelected: boolean; onClick: () => void }) {
+function TableVisual({ table, isSelected, onMouseDown }: { table: Table; isSelected: boolean; onMouseDown: (e: React.MouseEvent<HTMLDivElement>, tableId: number) => void }) {
   const config = statusConfig[table.status];
   
   const getChairPositions = (count: number, width: number, height: number) => {
     const chairs = [];
     const chairSize = 24; // width and height of chair container
-    const tableWidth = width * 4; // Assuming 1rem = 4px, w-16 = 64px
+    const tableWidth = width * 4;
     const tableHeight = height * 4;
 
-    // Horizontal chairs (top and bottom)
-    const horizontalSpacing = tableWidth / (Math.ceil(count / 2));
-    for (let i = 0; i < Math.ceil(count / 2); i++) {
-        // Top
+    const horizontalCount = Math.ceil(count / 2);
+    const verticalCount = Math.ceil((count - horizontalCount * 2) / 2);
+    
+    const horizontalSpacing = tableWidth / (horizontalCount);
+    for (let i = 0; i < horizontalCount; i++) {
         chairs.push({ top: `-${chairSize/2}px`, left: `${(i * horizontalSpacing) + (horizontalSpacing / 2) - (chairSize/2)}px` });
-        // Bottom
-         if(chairs.length < count) chairs.push({ bottom: `-${chairSize/2}px`, left: `${(i * horizontalSpacing) + (horizontalSpacing / 2) - (chairSize/2)}px`});
+        if(chairs.length < count) chairs.push({ bottom: `-${chairSize/2}px`, left: `${(i * horizontalSpacing) + (horizontalSpacing / 2) - (chairSize/2)}px`});
     }
 
-    // Vertical chairs (left and right sides) - if capacity is not fully met by top/bottom
-    const remainingChairs = count - chairs.length;
-    if (remainingChairs > 0) {
-        const verticalSpacing = tableHeight / (Math.ceil(remainingChairs / 2));
-         for (let i = 0; i < Math.ceil(remainingChairs / 2); i++) {
-            // Left
-            if(chairs.length < count) chairs.push({ left: `-${chairSize/2}px`, top: `${(i * verticalSpacing) + (verticalSpacing / 2) - (chairSize/2)}px` });
-            // Right
-            if(chairs.length < count) chairs.push({ right: `-${chairSize/2}px`, top: `${(i * verticalSpacing) + (verticalSpacing / 2) - (chairSize/2)}px` });
-        }
+    const verticalSpacing = tableHeight / (verticalCount + 1);
+     for (let i = 0; i < verticalCount; i++) {
+        if(chairs.length < count) chairs.push({ left: `-${chairSize/2}px`, top: `${((i+1) * verticalSpacing) - (chairSize/2)}px` });
+        if(chairs.length < count) chairs.push({ right: `-${chairSize/2}px`, top: `${((i+1) * verticalSpacing) - (chairSize/2)}px` });
     }
     
     return chairs;
@@ -60,11 +56,11 @@ function TableVisual({ table, isSelected, onClick }: { table: Table; isSelected:
   return (
     <div
       className={cn(
-        "absolute cursor-pointer transition-transform duration-200 hover:scale-110",
-        isSelected && "scale-110 ring-2 ring-primary ring-offset-2 ring-offset-background rounded-md"
+        "absolute cursor-grab active:cursor-grabbing transition-transform duration-200 hover:scale-110",
+        isSelected && "scale-110 ring-2 ring-primary ring-offset-2 ring-offset-background rounded-md z-20"
       )}
       style={{ top: `${table.y}px`, left: `${table.x}px` }}
-      onClick={onClick}
+      onMouseDown={(e) => onMouseDown(e, table.id)}
     >
         <div 
             className={cn(
@@ -75,7 +71,8 @@ function TableVisual({ table, isSelected, onClick }: { table: Table; isSelected:
             style={{ width: `${width*4}px`, height: `${height*4}px` }}
         >
              {chairs.map((style, i) => (
-                <div key={i} className="absolute w-6 h-6 bg-blue-400 rounded-md" style={{ ...style }}>
+                <div key={i} className="absolute w-6 h-6 bg-muted rounded-md flex items-center justify-center" style={{ ...style }}>
+                    <Armchair className="w-4 h-4 text-muted-foreground" />
                 </div>
             ))}
             <span className="text-2xl font-bold text-foreground">
@@ -156,7 +153,7 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
             </CardContent>
              <div className="p-6 pt-0">
                 <Button className="w-full" asChild disabled={!selectedTable}>
-                   <Link href={order ? `/orders/${order.id}` : '#'}>
+                   <Link href={order ? `/orders/${order.id}` : `/orders/new?tableId=${selectedTable?.id}`}>
                      {order ? 'View / Edit Order' : 'Create New Order'}
                    </Link>
                 </Button>
@@ -166,15 +163,86 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
 }
 
 export default function DashboardPage() {
-  const [selectedTableId, setSelectedTableId] = useState<number | null>(mockTables.find(t => t.status === 'Occupied')?.id ?? null);
-  const selectedTable = mockTables.find(t => t.id === selectedTableId) ?? null;
+  const [tables, setTables] = useState<Table[]>(initialMockTables);
+  const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
+  const { toast } = useToast();
+  
+  const floorPlanRef = useRef<HTMLDivElement>(null);
+  const draggingTable = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
+
+  const selectedTable = tables.find(t => t.id === selectedTableId) ?? null;
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
+    e.preventDefault();
+    setSelectedTableId(tableId);
+    const tableElement = e.currentTarget;
+    const rect = tableElement.getBoundingClientRect();
+    draggingTable.current = {
+      id: tableId,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!draggingTable.current || !floorPlanRef.current) return;
+    const floorRect = floorPlanRef.current.getBoundingClientRect();
+    
+    let newX = e.clientX - floorRect.left - draggingTable.current.offsetX;
+    let newY = e.clientY - floorRect.top - draggingTable.current.offsetY;
+
+    // Constrain within the floor plan
+    const table = tables.find(t => t.id === draggingTable.current!.id)!;
+    const tableWidth = (table.width ?? 16) * 4;
+    const tableHeight = (table.height ?? 16) * 4;
+
+    newX = Math.max(0, Math.min(newX, floorRect.width - tableWidth));
+    newY = Math.max(0, Math.min(newY, floorRect.height - tableHeight));
+
+    setTables(prevTables =>
+      prevTables.map(t =>
+        t.id === draggingTable.current!.id ? { ...t, x: newX, y: newY } : t
+      )
+    );
+  };
+
+  const handleMouseUp = () => {
+    draggingTable.current = null;
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  };
+
+  useEffect(() => {
+    // Cleanup event listeners on component unmount
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const handleSaveLayout = () => {
+    // In a real app, this would send the 'tables' state to a backend API
+    console.log("Saving new layout:", tables.map(t => ({id: t.id, x: t.x, y: t.y})));
+    toast({
+        title: "Layout Saved",
+        description: "The new table positions have been saved.",
+    });
+  }
+
 
   // The background image URL can be made dynamic in a real app (e.g., from settings)
   const floorPlanBackgroundUrl = 'https://placehold.co/1200x800.png';
 
   return (
     <>
-      <PageHeader title="Pizzeria Floor Plan" />
+      <PageHeader title="Restaurant Floor Plan">
+        <Button onClick={handleSaveLayout} variant="outline">
+            <Save className="mr-2 h-4 w-4" />
+            Save Layout
+        </Button>
+      </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 items-start">
         <div className="md:col-span-2">
             <Card>
@@ -186,16 +254,17 @@ export default function DashboardPage() {
                         </TabsList>
                         <TabsContent value="first" className="pt-4">
                            <div 
-                                className="relative h-[600px] w-full bg-cover bg-center rounded-md"
+                                ref={floorPlanRef}
+                                className="relative h-[600px] w-full bg-cover bg-center rounded-md border"
                                 style={{ backgroundImage: `url(${floorPlanBackgroundUrl})` }}
                                 data-ai-hint="wood floor"
                             >
-                                {mockTables.map((table) => (
+                                {tables.map((table) => (
                                     <TableVisual 
                                         key={table.id} 
                                         table={table} 
                                         isSelected={selectedTableId === table.id}
-                                        onClick={() => setSelectedTableId(table.id)}
+                                        onMouseDown={handleMouseDown}
                                     />
                                 ))}
                             </div>
