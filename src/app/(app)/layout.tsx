@@ -4,7 +4,7 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { useIdle } from "@/hooks/use-idle";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { mockUser } from "@/lib/data";
 
 export default function AppLayout({
@@ -13,13 +13,23 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = mockUser;
   
-  // Redirect to landing page after 60 seconds of inactivity
+  // Redirect to landing page after 60 seconds of inactivity, but not if we are on landing already
   useIdle({
-    onIdle: () => router.push('/landing'),
+    onIdle: () => {
+        if(pathname !== '/landing') {
+            router.push('/landing')
+        }
+    },
     idleTime: 60,
   });
+
+  // Landing page has its own layout
+  if (pathname === '/landing') {
+      return <div className="h-full">{children}</div>
+  }
 
   // Basic and Advanced users get a full-screen view without the sidebar
   if (user.role === 'Basic' || user.role === 'Advanced') {

@@ -1,41 +1,63 @@
 
 'use client'
 
-import { ArrowRight, Car, Package, Utensils, Globe } from "lucide-react";
+import { ArrowRight, BarChart2, BookOpen, Clock, HardHat, Home, Key, LayoutDashboard, LogOut, Package, Settings, Store, Users } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
+import { mockUser } from "@/lib/data";
+import Image from "next/image";
 
 const serviceOptions = [
   {
     title: "Restaurant",
     description: "Manage tables, orders, and floor plan for dine-in customers.",
-    icon: Utensils,
+    icon: LayoutDashboard,
     href: "/dashboard",
     isReady: true,
+    color: "text-orange-500",
   },
   {
-    title: "Collection",
+    title: "Menu",
     description: "Handle takeaway orders for customer pickup.",
-    icon: Package,
-    href: "/collection",
+    icon: BookOpen,
+    href: "/menu",
     isReady: true,
+     color: "text-red-500",
   },
   {
-    title: "Delivery",
+    title: "Team",
     description: "Coordinate and track delivery orders.",
-    icon: Car,
-    href: "/delivery",
+    icon: Users,
+    href: "/team",
     isReady: true,
+    color: "text-purple-500",
   },
   {
-    title: "Online Orders",
+    title: "Inventory",
     description: "Manage orders coming from your website or app.",
-    icon: Globe,
-    href: "/online-orders",
+    icon: Package,
+    href: "/inventory",
     isReady: true,
+     color: "text-green-500",
+  },
+   {
+    title: "Reports",
+    description: "View sales and performance analytics.",
+    icon: BarChart2,
+    href: "/admin/reports",
+    isReady: true,
+    color: "text-blue-500",
+  },
+  {
+    title: "Settings",
+    description: "Configure application settings.",
+    icon: Settings,
+    href: "/admin/settings",
+    isReady: true,
+     color: "text-gray-500",
   },
 ];
 
@@ -50,46 +72,48 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-        <PageHeader title="Select Service Mode" />
-        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-muted/20">
-            <div className="w-full max-w-4xl">
-                <div className="grid gap-8 md:grid-cols-2">
-                    {serviceOptions.map((option) => {
-                        const CardComponent = (
-                            <Card 
-                                key={option.title}
-                                className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl"
-                            >
-                                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                                    <div className="flex flex-col">
-                                        <CardTitle className="text-2xl font-headline text-primary">{option.title}</CardTitle>
-                                    </div>
-                                    <div className="bg-primary/10 p-3 rounded-full">
-                                        <option.icon className="h-6 w-6 text-primary" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-muted-foreground mb-6">{option.description}</p>
-                                    {option.isReady ? (
-                                        <Button className="w-full" asChild>
-                                            <Link href={option.href}>
-                                                Go to {option.title} <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-                                        <Button className="w-full" variant="secondary" onClick={() => handleComingSoon(option.title)}>
-                                            Coming Soon
-                                        </Button>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        );
-                        return CardComponent;
-                    })}
+    <div className="relative flex flex-col h-screen w-full">
+        <Image 
+            src="https://placehold.co/1920x1080.png"
+            alt="Blurred background"
+            fill
+            className="object-cover"
+            data-ai-hint="restaurant background"
+        />
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
+        <div className="relative z-10 flex flex-col h-full">
+            <header className="p-4 flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/login">
+                            <LogOut />
+                        </Link>
+                    </Button>
+                    <span>Hi, {mockUser.name}</span>
                 </div>
-            </div>
-        </main>
+            </header>
+            <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+                <div className="text-center mb-12">
+                    <h1 className="text-5xl font-bold text-foreground">Welcome!</h1>
+                </div>
+                <div className="w-full max-w-4xl">
+                    <div className="grid gap-6 md:grid-cols-3">
+                        {serviceOptions.map((option) => (
+                           <Link key={option.title} href={option.href} passHref>
+                                <Card
+                                    className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card/80 cursor-pointer h-40 flex flex-col items-center justify-center"
+                                >
+                                    <CardContent className="flex flex-col items-center justify-center p-6">
+                                        <option.icon className={`h-12 w-12 mb-2 ${option.color}`} strokeWidth={1.5} />
+                                        <span className="font-semibold">{option.title}</span>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
   );
 }
