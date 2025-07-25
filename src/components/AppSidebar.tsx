@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home } from "lucide-react"
+import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,9 @@ import { useState } from "react"
 const allMenuItems = [
   { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/collection", label: "Collection", icon: Package, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/customers", label: "Customers", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
@@ -39,7 +42,7 @@ export function AppSidebar() {
   const [currentUser, setCurrentUser] = useState(mockUser);
 
   const isActive = (path: string) => {
-    if (path === '/landing' || path === '/dashboard') return pathname === path;
+    if (path === '/landing' || path === '/dashboard' || path === '/collection' || path === '/delivery' || path === '/online-orders') return pathname === path;
     return pathname.startsWith(path)
   }
 

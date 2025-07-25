@@ -20,22 +20,22 @@ const serviceOptions = [
     title: "Collection",
     description: "Handle takeaway orders for customer pickup.",
     icon: Package,
-    href: "#",
-    isReady: false,
+    href: "/collection",
+    isReady: true,
   },
   {
     title: "Delivery",
     description: "Coordinate and track delivery orders.",
     icon: Car,
-    href: "#",
-    isReady: false,
+    href: "/delivery",
+    isReady: true,
   },
   {
     title: "Online Orders",
     description: "Manage orders coming from your website or app.",
     icon: Globe,
-    href: "#",
-    isReady: false,
+    href: "/online-orders",
+    isReady: true,
   },
 ];
 
