@@ -1,7 +1,7 @@
 
 'use client'
 
-import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users } from "lucide-react";
+import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,9 +36,9 @@ const allServiceOptions = [
   },
   {
     title: "Reservation",
-    icon: BarChart2,
+    icon: Calendar,
     href: "/reservations",
-    roles: ['Admin', 'Advanced']
+    roles: ['Admin', 'Advanced', 'Basic']
   },
    {
     title: "CRM",
@@ -84,7 +84,7 @@ export default function LandingPage() {
             <div className={cn(
                 "grid gap-6",
                  isBasicUser 
-                    ? "grid-cols-1 md:grid-cols-3" 
+                    ? "grid-cols-1 md:grid-cols-4" 
                     : "md:grid-cols-3 lg:grid-cols-5"
             )}>
                 {serviceOptions.map((option) => (
