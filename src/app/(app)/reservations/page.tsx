@@ -1,3 +1,6 @@
+
+'use client'
+
 import { format } from "date-fns";
 import { MoreVertical, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
