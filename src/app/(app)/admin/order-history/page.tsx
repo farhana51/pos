@@ -8,16 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockOrders } from "@/lib/data";
 import withAuth from "@/components/withAuth";
-import { Order, UserRole } from "@/lib/types";
+import { Order, UserRole, PaymentMethod } from "@/lib/types";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Car, Eye, Globe, Home, Package, Utensils } from "lucide-react";
+import { Car, CreditCard, Eye, Globe, HandCoins, Home, Package, Printer, Tag, Utensils } from "lucide-react";
 
 const statusColors: Record<Order['status'], string> = {
-    'Pending': 'text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/20',
-    'Paid': 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20',
-    'Cancelled': 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20',
+    'Pending': 'bg-amber-500/20 text-amber-500',
+    'Paid': 'bg-primary text-primary-foreground',
+    'Cancelled': 'bg-destructive/20 text-destructive',
 }
 
 const typeIcons: Record<Order['type'], React.ElementType> = {
@@ -25,6 +25,12 @@ const typeIcons: Record<Order['type'], React.ElementType> = {
     'Collection': Home,
     'Delivery': Car,
     'Online': Globe
+}
+
+const paymentMethodIcons: Record<PaymentMethod, React.ElementType> = {
+    'Card': CreditCard,
+    'Cash': HandCoins,
+    'Voucher': Tag,
 }
 
 function OrderHistoryPage() {
@@ -54,11 +60,11 @@ function OrderHistoryPage() {
 
     return (
         <>
-            <PageHeader title="Order History" />
+            <PageHeader title="All Orders" />
             <main className="p-4 sm:p-6 lg:p-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">All Orders</CardTitle>
+                        <CardTitle className="font-headline">Order Log</CardTitle>
                         <CardDescription>A comprehensive log of all transactions across all services.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -66,39 +72,53 @@ function OrderHistoryPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Order ID</TableHead>
-                                    <TableHead>Details</TableHead>
                                     <TableHead>Date</TableHead>
-                                    <TableHead>Time</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Payment Method</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {orders.map((order) => {
-                                    const Icon = typeIcons[order.type];
+                                    const PaymentIcon = order.paymentMethod ? paymentMethodIcons[order.paymentMethod] : null;
                                     return (
                                         <TableRow key={order.id}>
-                                            <TableCell className="font-medium">#{order.id}</TableCell>
+                                            <TableCell className="font-medium">TIK-{order.id}</TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <Icon className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{getOrderTitle(order)}</span>
-                                                </div>
+                                                <div>{format(new Date(order.createdAt), 'PP')}</div>
+                                                <div className="text-xs text-muted-foreground">{format(new Date(order.createdAt), 'p')}</div>
                                             </TableCell>
-                                            <TableCell>{format(new Date(order.createdAt), 'PPP')}</TableCell>
-                                            <TableCell>{format(new Date(order.createdAt), 'p')}</TableCell>
+                                            <TableCell>{getOrderTitle(order)}</TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className={statusColors[order.status]}>
-                                                    {order.status}
-                                                </Badge>
+                                                 <Badge variant="outline">{order.type}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {PaymentIcon && (
+                                                    <Badge variant="secondary" className="gap-1.5">
+                                                        <PaymentIcon className="h-3 w-3" />
+                                                        {order.paymentMethod}
+                                                    </Badge>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">£{calculateTotal(order).toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Badge className={statusColors[order.status]}>
+                                                    {order.status === 'Paid' ? 'Confirmed' : order.status}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" onClick={() => router.push(`/orders/${order.id}`)}>
-                                                    <Eye className="mr-2 h-3 w-3" />
-                                                    View Order
-                                                </Button>
+                                                <div className="flex justify-end gap-2">
+                                                     <Button variant="outline" size="sm">
+                                                        <Printer className="mr-2 h-3 w-3" />
+                                                        Print
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/orders/${order.id}`)}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
