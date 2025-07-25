@@ -6,11 +6,12 @@ import { useState } from 'react';
 import { Users, Armchair, Circle, Utensils } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { mockTables, getOrderByTableId } from "@/lib/data";
 import type { Table, TableStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 
 const statusConfig: Record<TableStatus, { base: string; highlight: string; label: string; }> = {
   Available: { base: "text-green-500", highlight: "fill-green-500/10 stroke-green-500", label: "Available" },
@@ -66,25 +67,78 @@ function TableVisual({ table, isSelected, onClick }: { table: Table; isSelected:
 
 function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
     const order = selectedTable?.orderId ? getOrderByTableId(selectedTable.orderId) : null;
+
+    const subtotal = order?.items.reduce((sum, item) => {
+        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+        return sum + (item.menuItem.price + addonsTotal) * item.quantity;
+    }, 0) ?? 0;
+
+    const totalVat = order?.items.reduce((sum, item) => {
+        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+        if (item.menuItem.vatRate > 0) {
+            return sum + (itemTotal * (item.menuItem.vatRate / 100));
+        }
+        return sum;
+    }, 0) ?? 0;
+
+    const grandTotal = subtotal + totalVat;
+
     return (
-        <Card className="h-full">
+        <Card className="h-full flex flex-col">
             <CardHeader>
-                <CardTitle>Order #{order?.id ?? '...'}</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                    <span>{selectedTable ? `Table ${selectedTable.id}` : 'No Table Selected'}</span>
+                    {selectedTable && <span className={cn("text-sm font-medium", statusConfig[selectedTable.status].base)}>{statusConfig[selectedTable.status].label}</span>}
+                </CardTitle>
+                <CardDescription>
+                    {order ? `Order #${order.id} - ${format(new Date(order.createdAt), 'p')}` : 'Click a table to view or create an order.'}
+                </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-full">
+            <CardContent className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
                 {selectedTable && order ? (
-                    <div className="text-left w-full">
-                        <p>Items: {order.items.length}</p>
-                        {/* A more detailed order summary would go here */}
+                    <div className="text-left w-full h-full flex flex-col">
+                        <div className="flex-1 space-y-2 overflow-y-auto">
+                            {order.items.map((item, index) => (
+                                <div key={index} className="flex justify-between items-start text-sm">
+                                    <div>
+                                        <p className="font-medium">{item.quantity}x {item.menuItem.name}</p>
+                                        {item.notes && <p className="text-xs text-muted-foreground">Note: {item.notes}</p>}
+                                    </div>
+                                    <p>£{((item.menuItem.price + (item.selectedAddons?.reduce((a,c) => a+c.price, 0) || 0)) * item.quantity).toFixed(2)}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="border-t pt-4 mt-4 space-y-2">
+                             <div className="flex justify-between text-sm">
+                                <span>Subtotal</span>
+                                <span>£{subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>VAT</span>
+                                <span>£{totalVat.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-base">
+                                <span>Total</span>
+                                <span>£{grandTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <>
                         <Utensils className="w-16 h-16 mb-4" />
-                        <p className="font-semibold">No Table Selected</p>
-                        <p className="text-sm">Click a table to view or create an order.</p>
+                        <p className="font-semibold">{selectedTable ? 'New Order' : 'No Table Selected'}</p>
+                        <p className="text-sm">{selectedTable ? 'Add items to create a new order.' : 'Select a table to begin.'}</p>
                     </>
                 )}
             </CardContent>
+             <div className="p-6 pt-0">
+                <Button className="w-full" asChild disabled={!selectedTable}>
+                   <Link href={order ? `/orders/${order.id}` : '#'}>
+                     {order ? 'View / Edit Order' : 'Create New Order'}
+                   </Link>
+                </Button>
+            </div>
         </Card>
     );
 }
