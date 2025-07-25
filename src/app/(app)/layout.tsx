@@ -31,10 +31,6 @@ function AppHeader() {
           Hi, {mockUser.name} ({mockUser.role})
         </span>
         <ThemeToggle />
-        <Button variant="outline" size="icon" onClick={handleLogout}>
-          <LogOut className="h-4 w-4" />
-          <span className="sr-only">Logout</span>
-        </Button>
       </div>
     </header>
   );
