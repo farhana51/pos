@@ -2,7 +2,7 @@
 
 'use client'
 
-import { notFound, useRouter, useSearchParams } from 'next/navigation';
+import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -482,7 +482,7 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
     )
 }
 
-function NewOrderPage({ params }: { params: { id: string } }) {
+function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
@@ -694,12 +694,15 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
 }
 
 
-function OrderDetailsPage({ params }: { params: { id: string } }) {
-  if (params.id === 'new') {
-    return <NewOrderPage params={params} />;
+function OrderDetailsPage() {
+  const params = useParams();
+  const id = params.id as string;
+
+  if (id === 'new') {
+    return <NewOrderPage />;
   }
   
-  const order = getOrderById(parseInt(params.id, 10));
+  const order = getOrderById(parseInt(id, 10));
 
   if (!order) {
     notFound();
