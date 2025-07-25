@@ -11,8 +11,12 @@ import { mockOrders, mockMenu } from '@/lib/data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, HandCoins, Landmark, Tag, TrendingUp, Utensils, Wallet, Percent } from 'lucide-react';
+import { CreditCard, HandCoins, Landmark, Tag, TrendingUp, Utensils, Wallet, Percent, Download } from 'lucide-react';
 import React from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Papa from 'papaparse';
+import { Button } from '@/components/ui/button';
 
 const VAT_RATE = 0.20; // 20% Standard UK VAT Rate
 
@@ -172,9 +176,81 @@ function ReportsPage() {
         setActiveIndex(index);
     };
 
+    const getTransactionData = () => {
+        return mockOrders.slice(0, 5).map((order) => {
+            const grossTotal = (order.items.reduce((sum, item) => {
+                const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+                const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+                return sum + itemTotal;
+            }, 0)) - (order.discount || 0);
+
+            const vatAmount = order.status === 'Cancelled' ? 0 : grossTotal * (VAT_RATE / (1 + VAT_RATE));
+            const netTotal = grossTotal - vatAmount;
+
+            return {
+                id: `#${order.id}`,
+                tableId: order.tableId,
+                time: format(new Date(order.createdAt), 'HH:mm'),
+                paymentMethod: order.paymentMethod || 'N/A',
+                status: order.status,
+                net: `£${netTotal.toFixed(2)}`,
+                vat: `£${vatAmount.toFixed(2)}`,
+                gross: `£${grossTotal.toFixed(2)}`,
+            };
+        });
+    }
+
+    const handleDownloadPdf = () => {
+        const doc = new jsPDF();
+        const transactionData = getTransactionData();
+        const tableColumn = ["Order ID", "Table", "Time", "Payment", "Status", "Net", "VAT", "Gross Total"];
+        const tableRows = transactionData.map(t => Object.values(t));
+        
+        doc.text("Financial Report", 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Date: ${format(new Date(), 'PPP')}`, 14, 20);
+        
+        doc.text(`Gross Revenue: £${totalGrossRevenue.toFixed(2)}`, 14, 30);
+        doc.text(`Net Revenue: £${totalNetRevenue.toFixed(2)}`, 14, 35);
+        doc.text(`Total VAT: £${totalVat.toFixed(2)}`, 14, 40);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 50,
+        });
+        
+        doc.save(`report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    }
+
+    const handleDownloadCsv = () => {
+        const transactionData = getTransactionData();
+        const csv = Papa.unparse(transactionData);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
   return (
     <>
-      <PageHeader title="Reports & Analytics" />
+      <PageHeader title="Reports & Analytics">
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadCsv}>
+                <Download className="mr-2 h-4 w-4" />
+                Download CSV
+            </Button>
+            <Button variant="outline" onClick={handleDownloadPdf}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+            </Button>
+        </div>
+      </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 space-y-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
