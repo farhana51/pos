@@ -15,11 +15,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 function AppHeader() {
   const router = useRouter();
-  const handleLogout = () => {
-    logoutUser();
-    router.push('/login');
-  };
-
+  
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-4 md:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-2">
@@ -45,7 +41,8 @@ export default function AppLayout({
   const router = useRouter();
   const pathname = usePathname();
   // We use state to ensure the component re-renders when the user changes.
-  const [user, setUser] = useState<User>(mockUser);
+  const [user, setUser] = useState<User | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
    const handleLogout = () => {
     logoutUser();
@@ -68,6 +65,7 @@ export default function AppLayout({
     
     // Initial check
     handleStorageChange();
+    setIsMounted(true);
 
     return () => {
         window.removeEventListener('storage', handleStorageChange);
@@ -83,6 +81,14 @@ export default function AppLayout({
     },
     idleTime: 60,
   });
+
+  if (!isMounted || !user) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <Utensils className="h-12 w-12 text-primary animate-spin" />
+        </div>
+    );
+  }
 
   // Landing page has a special layout for basic/advanced users
   if (pathname === '/landing' && (user.role === 'Basic' || user.role === 'Advanced')) {
@@ -118,8 +124,17 @@ export default function AppLayout({
 
   // Fallback for Basic/Advanced on other pages
   return (
-     <div className="flex-1 overflow-y-auto">
-        {children}
+     <div className="flex flex-col h-screen">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+        <Button
+            variant="outline"
+            className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg"
+            onClick={handleLogout}
+        >
+            <LogOut className="h-6 w-6" />
+            <span className="sr-only">Logout</span>
+        </Button>
     </div>
   )
 }
