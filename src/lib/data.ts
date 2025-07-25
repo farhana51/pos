@@ -88,22 +88,22 @@ export const mockTeam: TeamMember[] = [
 ];
 
 export const mockTables: Table[] = [
-  { id: 1, capacity: 4, status: 'Occupied', orderId: 101, x: 100, y: 50, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 1, capacity: 4, status: 'Available', x: 100, y: 50, width: 20, height: 20, floor: 'Main Floor' },
   { id: 2, capacity: 4, status: 'Available', x: 250, y: 50, width: 20, height: 20, floor: 'Main Floor' },
   { id: 3, capacity: 6, status: 'Available', x: 400, y: 50, width: 32, height: 20, floor: 'Main Floor' },
-  { id: 4, capacity: 4, status: 'Reserved', x: 100, y: 200, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 4, capacity: 4, status: 'Available', x: 100, y: 200, width: 20, height: 20, floor: 'Main Floor' },
   { id: 5, capacity: 4, status: 'Available', x: 250, y: 200, width: 20, height: 20, floor: 'Main Floor' },
   { id: 6, capacity: 8, status: 'Available', x: 400, y: 200, width: 32, height: 20, floor: 'Main Floor' },
-  { id: 7, capacity: 4, status: 'Occupied', orderId: 102, x: 100, y: 350, width: 20, height: 20, floor: 'Main Floor' },
-  { id: 8, capacity: 4, status: 'Dirty', x: 250, y: 350, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 7, capacity: 4, status: 'Available', x: 100, y: 350, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 8, capacity: 4, status: 'Available', x: 250, y: 350, width: 20, height: 20, floor: 'Main Floor' },
   { id: 9, capacity: 6, status: 'Available', x: 100, y: 500, width: 32, height: 20, floor: 'Main Floor' },
-  { id: 10, capacity: 4, status: 'Reserved', x: 280, y: 500, width: 20, height: 20, floor: 'Main Floor' },
-  { id: 11, capacity: 2, status: 'Dirty', x: 420, y: 500, width: 20, height: 20, floor: 'Main Floor' },
-  { id: 12, capacity: 6, status: 'Occupied', orderId: 103, x: 520, y: 500, width: 32, height: 20, floor: 'Main Floor' },
+  { id: 10, capacity: 4, status: 'Available', x: 280, y: 500, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 11, capacity: 2, status: 'Available', x: 420, y: 500, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 12, capacity: 6, status: 'Available', x: 520, y: 500, width: 32, height: 20, floor: 'Main Floor' },
   // Patio Tables
   { id: 13, capacity: 2, status: 'Available', x: 50, y: 50, width: 20, height: 20, floor: 'Patio' },
   { id: 14, capacity: 2, status: 'Available', x: 150, y: 50, width: 20, height: 20, floor: 'Patio' },
-  { id: 15, capacity: 4, status: 'Reserved', x: 50, y: 150, width: 20, height: 20, floor: 'Patio' },
+  { id: 15, capacity: 4, status: 'Available', x: 50, y: 150, width: 20, height: 20, floor: 'Patio' },
   { id: 16, capacity: 4, status: 'Available', x: 150, y: 150, width: 20, height: 20, floor: 'Patio' },
 ];
 
@@ -128,70 +128,7 @@ export const mockMenu: MenuItem[] = [
   { id: 8, name: 'Fries', description: 'With truffle oil and parmesan.', price: 6.00, category: 'Sides' },
 ];
 
-export const mockOrders: Order[] = [
-  { 
-    id: 101, 
-    tableId: 1, 
-    type: 'Table',
-    status: 'Pending',
-    paymentMethod: 'Card',
-    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    items: [
-      { menuItem: mockMenu[0], quantity: 1, selectedAddons: [mockMenu[0].addons![1]] },
-      { menuItem: mockMenu[5], quantity: 2 },
-    ]
-  },
-  {
-    id: 102,
-    tableId: 7,
-    type: 'Table',
-    status: 'Pending',
-    paymentMethod: 'Cash',
-    createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    items: [
-      { menuItem: mockMenu[3], quantity: 2, notes: 'One without basil' },
-      { menuItem: mockMenu[6], quantity: 2 },
-    ]
-  },
-  {
-    id: 103,
-    tableId: 12,
-    type: 'Table',
-    status: 'Pending',
-    paymentMethod: 'Card',
-    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    items: [
-      { menuItem: mockMenu[2], quantity: 1 },
-      { menuItem: mockMenu[4], quantity: 1 },
-      { menuItem: mockMenu[7], quantity: 2 },
-    ]
-  },
-  {
-    id: 104,
-    tableId: 4,
-    type: 'Table',
-    status: 'Cancelled',
-    paymentMethod: 'Voucher',
-    createdAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
-    items: [
-      { menuItem: mockMenu[1], quantity: 2 },
-    ]
-  },
-  {
-    id: 105,
-    tableId: 6,
-    type: 'Table',
-    status: 'Paid',
-    paymentMethod: 'Card',
-    createdAt: new Date(Date.now() - 1000 * 60 * 125).toISOString(),
-    items: [
-      { menuItem: mockMenu[0], quantity: 1 },
-      { menuItem: mockMenu[1], quantity: 1 },
-      { menuItem: mockMenu[2], quantity: 1 },
-      { menuItem: mockMenu[3], quantity: 1 },
-    ]
-  }
-];
+export const mockOrders: Order[] = [];
 
 export const mockReservations: Reservation[] = [
   { id: 1, customerName: 'John Doe', partySize: 4, time: '2024-08-15T19:00', status: 'Confirmed' },
