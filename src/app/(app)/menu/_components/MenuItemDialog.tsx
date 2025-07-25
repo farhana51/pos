@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { MenuItem, Addon } from "@/lib/types";
+import type { MenuItem, Addon, MenuCategory } from "@/lib/types";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const addonSchema = z.object({
     id: z.number().optional(),
@@ -37,7 +38,7 @@ interface MenuItemDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   onSave: (item: MenuItem) => void;
   item: MenuItem | null;
-  categories: string[];
+  categories: MenuCategory[];
 }
 
 export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: MenuItemDialogProps) {
@@ -47,7 +48,7 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
       name: "",
       description: "",
       price: 0,
-      category: categories[0] || "Mains",
+      category: categories[0]?.name || "",
       subcategory: "",
       addons: [],
     },
@@ -57,6 +58,9 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
     control: form.control,
     name: "addons",
   });
+
+  const selectedCategoryName = form.watch("category");
+  const subcategoryOptions = categories.find(c => c.name === selectedCategoryName)?.subcategories || [];
 
   useEffect(() => {
     if (item) {
@@ -73,12 +77,20 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
         name: "",
         description: "",
         price: 0,
-        category: categories[0] || "Mains",
+        category: categories[0]?.name || "",
         subcategory: "",
         addons: [],
       });
     }
   }, [item, form, isOpen, categories]);
+  
+  useEffect(() => {
+    // Reset subcategory if category changes and the old subcategory is not valid anymore
+    if (!subcategoryOptions.includes(form.getValues('subcategory') ?? '')) {
+      form.setValue('subcategory', '');
+    }
+  }, [selectedCategoryName, subcategoryOptions, form]);
+
 
   const onSubmit = (data: MenuItemFormValues) => {
     const addons = data.addons?.map(addon => ({
@@ -153,12 +165,18 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
                   render={({ field }) => (
                       <FormItem>
                           <FormLabel>Category</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. Mains, Starters" {...field} list="category-suggestions" />
-                          </FormControl>
-                           <datalist id="category-suggestions">
-                                {categories.map(cat => <option key={cat} value={cat} />)}
-                           </datalist>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map(cat => (
+                                <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                       </FormItem>
                   )}
@@ -169,7 +187,18 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
                   render={({ field }) => (
                       <FormItem>
                           <FormLabel>Subcategory (Optional)</FormLabel>
-                          <Input placeholder="e.g. Pasta, Cocktails" {...field} />
+                           <Select onValueChange={field.onChange} value={field.value} disabled={subcategoryOptions.length === 0}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a subcategory" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                               {subcategoryOptions.map(sub => (
+                                <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                       </FormItem>
                   )}

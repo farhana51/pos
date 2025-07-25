@@ -1,4 +1,4 @@
-import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer, SetMenu } from './types';
+import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer, SetMenu, MenuCategory } from './types';
 
 // --- User Data ---
 // This is now the single source of truth for all users/team members.
@@ -116,6 +116,14 @@ export const mockTables: Table[] = [
   { id: 14, capacity: 2, status: 'Available', x: 150, y: 50, width: 20, height: 20, floor: 'Patio' },
   { id: 15, capacity: 4, status: 'Available', x: 50, y: 150, width: 20, height: 20, floor: 'Patio' },
   { id: 16, capacity: 4, status: 'Available', x: 150, y: 150, width: 20, height: 20, floor: 'Patio' },
+];
+
+export const mockCategories: MenuCategory[] = [
+    { name: 'Starters', subcategories: [] },
+    { name: 'Mains', subcategories: ['Pizza'] },
+    { name: 'Sides', subcategories: [] },
+    { name: 'Desserts', subcategories: [] },
+    { name: 'Drinks', subcategories: ['Cocktails', 'Non-Alcoholic'] },
 ];
 
 export const mockMenu: MenuItem[] = [

@@ -28,6 +28,11 @@ export interface Addon {
   price: number;
 }
 
+export interface MenuCategory {
+    name: string;
+    subcategories: string[];
+}
+
 export interface MenuItem {
   id: number;
   name: string;

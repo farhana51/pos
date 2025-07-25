@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockMenu, mockSetMenus } from "@/lib/data";
-import type { MenuItem, UserRole, SetMenu } from "@/lib/types";
-import { MoreVertical, PlusCircle } from "lucide-react";
+import { mockMenu, mockSetMenus, mockCategories } from "@/lib/data";
+import type { MenuItem, UserRole, SetMenu, MenuCategory } from "@/lib/types";
+import { MoreVertical, PlusCircle, Settings } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import withAuth from "@/components/withAuth";
 import { MenuItemDialog } from "./_components/MenuItemDialog";
 import { SetMenuDialog } from "./_components/SetMenuDialog";
+import { CategoryDialog } from "./_components/CategoryDialog";
 
 function MenuItemsTable({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (item: MenuItem) => void, onDelete: (id: number) => void }) {
   if (items.length === 0) {
@@ -128,12 +129,16 @@ function SetMenusTable({ items, onEdit, onDelete }: { items: SetMenu[], onEdit: 
 function MenuPage() {
   const [menu, setMenu] = useState<MenuItem[]>(mockMenu);
   const [setMenus, setSetMenus] = useState<SetMenu[]>(mockSetMenus);
+  const [categories, setCategories] = useState<MenuCategory[]>(mockCategories);
+  
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editingSetMenu, setEditingSetMenu] = useState<SetMenu | null>(null);
+  
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isSetMenuDialogOpen, setIsSetMenuDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   
-  const categories = [...new Set(menu.map(item => item.category))];
+  const categoryNames = categories.map(c => c.name);
 
   const handleAddItem = () => {
     setEditingItem(null);
@@ -181,11 +186,29 @@ function MenuPage() {
   const handleDeleteSetMenu = (id: number) => {
       setSetMenus(setMenus.filter(sm => sm.id !== id));
   }
+
+  const handleSaveCategories = (newCategories: MenuCategory[]) => {
+    setCategories(newCategories);
+    // Potentially update items that were in a deleted category
+    setMenu(currentMenu => currentMenu.map(item => {
+        if (!newCategories.some(c => c.name === item.category)) {
+            return { ...item, category: '', subcategory: '' };
+        }
+        if (!newCategories.find(c => c.name === item.category)?.subcategories.includes(item.subcategory || '')) {
+             return { ...item, subcategory: '' };
+        }
+        return item;
+    }));
+  }
   
   return (
     <>
       <PageHeader title="Menu Management">
         <div className="flex gap-2">
+            <Button onClick={() => setIsCategoryDialogOpen(true)} variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Manage Categories
+            </Button>
             <Button onClick={handleAddItem} variant="outline">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Item
@@ -209,13 +232,13 @@ function MenuPage() {
                         <CardDescription>Manage your restaurant's individual items, prices, and categories.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Tabs defaultValue={categories[0]} className="w-full">
+                        <Tabs defaultValue={categoryNames[0]} className="w-full">
                         <TabsList>
-                            {categories.map(category => (
+                            {categoryNames.map(category => (
                                 <TabsTrigger key={category} value={category}>{category}</TabsTrigger>
                             ))}
                         </TabsList>
-                        {categories.map(category => (
+                        {categoryNames.map(category => (
                             <TabsContent key={category} value={category} className="mt-4">
                                 <MenuItemsTable 
                                     items={menu.filter(item => item.category === category)} 
@@ -255,6 +278,12 @@ function MenuPage() {
         setMenu={editingSetMenu}
         allItems={menu}
       />
+      <CategoryDialog
+        isOpen={isCategoryDialogOpen}
+        setIsOpen={setIsCategoryDialogOpen}
+        categories={categories}
+        onSave={handleSaveCategories}
+       />
     </>
   );
 }
