@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 
 const getOrderById = (id: number): Order | undefined => {
@@ -118,13 +119,13 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   );
 }
 
-function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onSendOrder: () => void, isExistingOrder?: boolean }) {
+function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder, discountAmount }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onSendOrder: () => void, isExistingOrder?: boolean, discountAmount: number }) {
   const subtotal = items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
   }, 0);
 
-  const grandTotal = subtotal;
+  const grandTotal = subtotal - discountAmount;
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
       const updatedItems = [...items];
@@ -189,6 +190,12 @@ function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder }:
                 <span>Subtotal</span>
                 <span>£{subtotal.toFixed(2)}</span>
             </div>
+            {discountAmount > 0 && (
+                <div className="flex justify-between w-full text-sm text-destructive">
+                    <span>Discount</span>
+                    <span>- £{discountAmount.toFixed(2)}</span>
+                </div>
+            )}
             <div className="flex justify-between font-bold text-lg">
                 <span>Grand Total</span>
                 <span>£{grandTotal.toFixed(2)}</span>
@@ -341,30 +348,8 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
     )
 }
 
-function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccessfulPayment: (paymentMethod: PaymentMethod, discountApplied: number) => void; }) {
+function PaymentDialog({ order, onSuccessfulPayment, discountAmount }: { order: Order; onSuccessfulPayment: (paymentMethod: PaymentMethod, discountApplied: number) => void; discountAmount: number; }) {
     const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-    const router = useRouter();
-    const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage' });
-    const [appliedDiscount, setAppliedDiscount] = useState(0);
-    const [customDiscount, setCustomDiscount] = useState<number | string>('');
-
-    // State to hold the current user role, ensuring it's up-to-date
-    const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-    const canApplyDiscount = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
-
-    useEffect(() => {
-        if(typeof window !== 'undefined'){
-            const savedSettings = localStorage.getItem('discountSettings');
-            if (savedSettings) {
-                setDiscountSettings(JSON.parse(savedSettings));
-            }
-            // Get user from localStorage to ensure we have the correct role
-            const storedUser = localStorage.getItem('currentUser');
-            if (storedUser) {
-                setCurrentUserRole(JSON.parse(storedUser).role);
-            }
-        }
-    }, []);
 
     const subtotal = order.items.reduce((sum, item) => {
         const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
@@ -372,24 +357,7 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
         return sum + itemTotal;
     }, 0);
 
-    const discountAmount = appliedDiscount;
     const grandTotal = subtotal - discountAmount;
-
-
-    const handleApplyDiscount = () => {
-        const value = typeof customDiscount === 'string' ? parseFloat(customDiscount) : customDiscount;
-        if (isNaN(value) || value < 0) {
-            setAppliedDiscount(0);
-            return;
-        }
-
-        if (discountSettings.type === 'percentage') {
-            const discount = (subtotal * value) / 100;
-            setAppliedDiscount(discount > subtotal ? subtotal : discount);
-        } else {
-            setAppliedDiscount(value > subtotal ? subtotal : value);
-        }
-    }
 
     const handlePayment = () => {
         if (paymentMethod) {
@@ -406,7 +374,7 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
     return (
         <Dialog>
             <DialogTrigger asChild>
-                 <Button className="bg-green-600 text-white hover:bg-green-700"><Sparkles className="mr-2" /> Finalize Bill</Button>
+                 <Button className="bg-green-600 text-white hover:bg-green-700 w-full"><Sparkles className="mr-2" /> Finalize Bill</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -415,29 +383,10 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
                 <div className="py-4 space-y-4">
                      <div className="space-y-2">
                         <div className="flex justify-between"><span>Subtotal</span> <span>£{subtotal.toFixed(2)}</span></div>
-                        {appliedDiscount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span> <span>- £{appliedDiscount.toFixed(2)}</span></div>}
+                        {discountAmount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span> <span>- £{discountAmount.toFixed(2)}</span></div>}
                         <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total to Pay</span> <span>£{grandTotal.toFixed(2)}</span></div>
                     </div>
                     
-                    {discountSettings.enabled && canApplyDiscount && (
-                        <>
-                        <Separator />
-                        <div className="space-y-3">
-                             <h4 className="text-sm font-medium">Apply Discount</h4>
-                             <div className="flex gap-2">
-                                <Input 
-                                    type="number"
-                                    placeholder={discountSettings.type === 'percentage' ? 'Custom %' : 'Custom £'}
-                                    value={customDiscount}
-                                    onChange={(e) => setCustomDiscount(e.target.value)}
-                                />
-                                <Button variant="secondary" onClick={handleApplyDiscount}>Apply</Button>
-                                 <Button variant="ghost" size="sm" onClick={() => { setAppliedDiscount(0); setCustomDiscount(''); }}>Remove</Button>
-                             </div>
-                        </div>
-                        </>
-                    )}
-
                     <Separator />
                     
                     <Label>Select Payment Method</Label>
@@ -468,7 +417,7 @@ function CancelOrderDialog({ orderId, onCancel }: { orderId: number, onCancel: (
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/20">Cancel Order</Button>
+                <Button variant="destructive" className="bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/20 w-full">Cancel Order</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -528,6 +477,7 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -601,7 +551,7 @@ function NewOrderPage() {
                     <MenuGrid onSelectItem={handleSelectItem} />
                 </div>
                 <div className="md:col-span-1 h-full">
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleSendOrder} />
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleSendOrder} discountAmount={0} />
                 </div>
                  {itemToCustomize && (
                     <AddItemDialog
@@ -620,20 +570,49 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const hasAdvancedPermission = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
-  
+  const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage' });
+  const [appliedDiscount, setAppliedDiscount] = useState(initialOrder.discount || 0);
+  const [customDiscount, setCustomDiscount] = useState<number | string>('');
+
+  const canApplyDiscount = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             setCurrentUserRole(JSON.parse(storedUser).role);
         }
+        const savedSettings = localStorage.getItem('discountSettings');
+        if (savedSettings) {
+            setDiscountSettings(JSON.parse(savedSettings));
+        }
     }
   }, []);
 
   const handleUpdateItems = (newItems: OrderItem[]) => {
       setOrder(prev => ({...prev, items: newItems}));
+  }
+
+  const subtotal = order.items.reduce((sum, item) => {
+    const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+    const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+    return sum + itemTotal;
+  }, 0);
+
+  const handleApplyDiscount = () => {
+    const value = typeof customDiscount === 'string' ? parseFloat(customDiscount) : customDiscount;
+    if (isNaN(value) || value < 0) {
+        setAppliedDiscount(0);
+        return;
+    }
+
+    if (discountSettings.type === 'percentage') {
+        const discount = (subtotal * value) / 100;
+        setAppliedDiscount(discount > subtotal ? subtotal : discount);
+    } else {
+        setAppliedDiscount(value > subtotal ? subtotal : value);
+    }
   }
 
   const handleAddItem = (item: OrderItem) => {
@@ -703,7 +682,6 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
     <>
       <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
         <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
-        <PaymentDialog order={order} onSuccessfulPayment={handleSuccessfulPayment} />
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
         <div className="md:col-span-2 h-full">
@@ -711,16 +689,38 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         </div>
         <div className="md:col-span-1 h-full flex flex-col gap-8">
             <div className="flex-1">
-                <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleUpdateOrder} isExistingOrder={true}/>
+                <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleUpdateOrder} isExistingOrder={true} discountAmount={appliedDiscount} />
             </div>
             <Card>
                 <CardHeader>
                 <CardTitle>Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                    <BillSplittingDialog items={order.items} />
-                    {hasAdvancedPermission && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
-                    {hasAdvancedPermission && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
+                <CardContent className="flex flex-col gap-4">
+                    {discountSettings.enabled && canApplyDiscount && (
+                        <div className="space-y-3 pt-4 border-t">
+                             <h4 className="text-sm font-medium">Apply Discount</h4>
+                             <div className="flex gap-2">
+                                <Input 
+                                    type="number"
+                                    placeholder={discountSettings.type === 'percentage' ? 'Custom %' : 'Custom £'}
+                                    value={customDiscount}
+                                    onChange={(e) => setCustomDiscount(e.target.value)}
+                                />
+                                <Button variant="secondary" onClick={handleApplyDiscount}>Apply</Button>
+                                 <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => { setAppliedDiscount(0); setCustomDiscount(''); }}>
+                                    <X className="h-4 w-4"/>
+                                 </Button>
+                             </div>
+                        </div>
+                    )}
+                    <div className="flex flex-col gap-2 pt-4 border-t">
+                        <BillSplittingDialog items={order.items} />
+                        {canApplyDiscount && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
+                        {canApplyDiscount && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
+                    </div>
+                    <div className="pt-4 border-t">
+                         <PaymentDialog order={order} onSuccessfulPayment={handleSuccessfulPayment} discountAmount={appliedDiscount} />
+                    </div>
                 </CardContent>
             </Card>
         </div>

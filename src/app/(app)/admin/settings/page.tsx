@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import withAuth from "@/components/withAuth";
+import { useToast } from "@/hooks/use-toast";
 import { mockTables } from "@/lib/data";
 import { UserRole } from "@/lib/types";
 import { FilePlus2 } from "lucide-react";
@@ -29,6 +30,7 @@ function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id
 }
 
 function SettingsPage() {
+    const { toast } = useToast();
     const [settings, setSettings] = useState({
         reservations: true,
         inventory: true,
@@ -89,6 +91,10 @@ function SettingsPage() {
         // Here you would typically send the settings to your backend
         console.log("Saving settings:", { settings, printerIps, floors, discountSettings });
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
+        toast({
+            title: "Settings Saved",
+            description: "Your changes have been saved successfully.",
+        });
     }
 
   return (
