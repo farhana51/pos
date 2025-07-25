@@ -23,7 +23,7 @@ export interface Table {
 }
 
 export interface Addon {
-  id: number;
+  id?: number;
   name: string;
   price: number;
 }

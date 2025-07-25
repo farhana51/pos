@@ -16,6 +16,15 @@ import withAuth from "@/components/withAuth";
 import { MenuItemDialog } from "./_components/MenuItemDialog";
 
 function MenuTable({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (item: MenuItem) => void, onDelete: (id: number) => void }) {
+  if (items.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-16">
+        <p>No items in this category yet.</p>
+        <p className="text-sm">Click "Add Menu Item" to get started.</p>
+      </div>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -44,6 +53,9 @@ function MenuTable({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (it
               {item.addons && item.addons.length > 2 && (
                 <div className="text-xs text-muted-foreground">...and {item.addons.length - 2} more.</div>
               )}
+               {(!item.addons || item.addons.length === 0) && (
+                <div className="text-xs text-muted-foreground italic">None</div>
+              )}
             </TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
@@ -54,7 +66,7 @@ function MenuTable({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (it
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => onEdit(item)}>Edit</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive">Delete</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -82,11 +94,12 @@ function MenuPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSaveItem = (item: MenuItem) => {
-    if(item.id) { // If item has an ID, it's an edit
-        setMenu(menu.map(m => m.id === item.id ? item : m));
-    } else { // No ID, it's a new item
-        const newItem = { ...item, id: Math.max(...menu.map(m => m.id), 0) + 1 };
+  const handleSaveItem = (itemToSave: MenuItem) => {
+    // If item has a real ID (not 0), it's an edit
+    if(itemToSave.id && menu.some(m => m.id === itemToSave.id)) { 
+        setMenu(menu.map(m => m.id === itemToSave.id ? itemToSave : m));
+    } else { // No ID or ID not found, it's a new item
+        const newItem = { ...itemToSave, id: Math.max(0, ...menu.map(m => m.id)) + 1 };
         setMenu([...menu, newItem]);
     }
   }
@@ -134,6 +147,7 @@ function MenuPage() {
         setIsOpen={setIsDialogOpen}
         onSave={handleSaveItem}
         item={editingItem}
+        categories={categories}
       />
     </>
   );
