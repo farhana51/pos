@@ -92,7 +92,7 @@ function TableCard({ table }: { table: Table }) {
 export default function DashboardPage() {
   return (
     <>
-      <PageHeader title="Table Dashboard" />
+      <PageHeader title="Restaurant Floor Plan" />
       <main className="p-4 sm:p-6 lg:p-8">
         <PromotionalBanner />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

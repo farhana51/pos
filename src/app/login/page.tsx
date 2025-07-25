@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter>
           <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-            <Link href="/dashboard">Sign in</Link>
+            <Link href="/landing">Sign in</Link>
           </Button>
         </CardFooter>
       </Card>
