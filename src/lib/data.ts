@@ -53,18 +53,18 @@ export const mockTeam: TeamMember[] = [
 ];
 
 export const mockTables: Table[] = [
-  { id: 1, capacity: 2, status: 'Occupied', orderId: 101 },
-  { id: 2, capacity: 4, status: 'Available' },
-  { id: 3, capacity: 4, status: 'Reserved' },
-  { id: 4, capacity: 6, status: 'Available' },
-  { id: 5, capacity: 2, status: 'Dirty' },
-  { id: 6, capacity: 8, status: 'Available' },
-  { id: 7, capacity: 4, status: 'Occupied', orderId: 102 },
-  { id: 8, capacity: 4, status: 'Available' },
-  { id: 9, capacity: 2, status: 'Available' },
-  { id: 10, capacity: 6, status: 'Reserved' },
-  { id: 11, capacity: 4, status: 'Dirty' },
-  { id: 12, capacity: 5, status: 'Occupied', orderId: 103 },
+  { id: 1, capacity: 4, status: 'Occupied', orderId: 101, x: 100, y: 50, width: 20, height: 20 },
+  { id: 2, capacity: 4, status: 'Available', x: 250, y: 50, width: 20, height: 20 },
+  { id: 3, capacity: 6, status: 'Available', x: 400, y: 50, width: 32, height: 20 },
+  { id: 4, capacity: 4, status: 'Reserved', x: 100, y: 200, width: 20, height: 20 },
+  { id: 5, capacity: 4, status: 'Available', x: 250, y: 200, width: 20, height: 20 },
+  { id: 6, capacity: 8, status: 'Available', x: 400, y: 200, width: 32, height: 20 },
+  { id: 7, capacity: 4, status: 'Occupied', orderId: 102, x: 100, y: 350, width: 20, height: 20 },
+  { id: 8, capacity: 4, status: 'Dirty', x: 250, y: 350, width: 20, height: 20 },
+  { id: 9, capacity: 6, status: 'Available', x: 100, y: 500, width: 32, height: 20 },
+  { id: 10, capacity: 4, status: 'Reserved', x: 280, y: 500, width: 20, height: 20 },
+  { id: 11, capacity: 2, status: 'Dirty', x: 420, y: 500, width: 20, height: 20 },
+  { id: 12, capacity: 6, status: 'Occupied', orderId: 103, x: 520, y: 500, width: 32, height: 20 },
 ];
 
 export const mockMenu: MenuItem[] = [

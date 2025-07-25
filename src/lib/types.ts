@@ -13,6 +13,10 @@ export interface Table {
   capacity: number;
   status: TableStatus;
   orderId?: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface Addon {

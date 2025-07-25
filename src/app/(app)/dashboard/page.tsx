@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Users, Armchair, Circle, Utensils } from "lucide-react";
+import { Users, Armchair, Circle, Utensils, Square, Minus, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,57 +13,79 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
-const statusConfig: Record<TableStatus, { base: string; highlight: string; label: string; }> = {
-  Available: { base: "text-green-500", highlight: "fill-green-500/10 stroke-green-500", label: "Available" },
-  Occupied: { base: "text-blue-500", highlight: "fill-blue-500/10 stroke-blue-500", label: "Occupied" },
-  Reserved: { base: "text-purple-500", highlight: "fill-purple-500/10 stroke-purple-500", label: "Reserved" },
-  Dirty: { base: "text-yellow-500", highlight: "fill-yellow-500/10 stroke-yellow-500", label: "Needs Cleaning" },
+const statusConfig: Record<TableStatus, { border: string; bg: string; label: string; }> = {
+  Available: { border: "border-green-500", bg: "bg-green-500/10", label: "Available" },
+  Occupied: { border: "border-red-500", bg: "bg-red-500/10", label: "Occupied" },
+  Reserved: { border: "border-purple-500", bg: "bg-purple-500/10", label: "Reserved" },
+  Dirty: { border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Needs Cleaning" },
 };
 
 function TableVisual({ table, isSelected, onClick }: { table: Table; isSelected: boolean; onClick: () => void }) {
   const config = statusConfig[table.status];
-  const order = table.orderId ? getOrderByTableId(table.orderId) : null;
-
-  // Function to generate chair positions
-  const getChairPositions = (count: number) => {
+  
+  const getChairPositions = (count: number, width: number, height: number) => {
     const chairs = [];
-    const angleStep = 360 / count;
-    for (let i = 0; i < count; i++) {
-      const angle = angleStep * i - 90; // Start from top
-      chairs.push({
-        transform: `rotate(${angle}deg) translate(50px) rotate(-${angle}deg)`,
-      });
+    const chairSize = 24; // width and height of chair container
+    const tableWidth = width * 4; // Assuming 1rem = 4px, w-16 = 64px
+    const tableHeight = height * 4;
+
+    // Horizontal chairs (top and bottom)
+    const horizontalSpacing = tableWidth / (Math.ceil(count / 2));
+    for (let i = 0; i < Math.ceil(count / 2); i++) {
+        // Top
+        chairs.push({ top: `-${chairSize/2}px`, left: `${(i * horizontalSpacing) + (horizontalSpacing / 2) - (chairSize/2)}px` });
+        // Bottom
+         if(chairs.length < count) chairs.push({ bottom: `-${chairSize/2}px`, left: `${(i * horizontalSpacing) + (horizontalSpacing / 2) - (chairSize/2)}px`});
     }
+
+    // Vertical chairs (left and right sides) - if capacity is not fully met by top/bottom
+    const remainingChairs = count - chairs.length;
+    if (remainingChairs > 0) {
+        const verticalSpacing = tableHeight / (Math.ceil(remainingChairs / 2));
+         for (let i = 0; i < Math.ceil(remainingChairs / 2); i++) {
+            // Left
+            if(chairs.length < count) chairs.push({ left: `-${chairSize/2}px`, top: `${(i * verticalSpacing) + (verticalSpacing / 2) - (chairSize/2)}px` });
+            // Right
+            if(chairs.length < count) chairs.push({ right: `-${chairSize/2}px`, top: `${(i * verticalSpacing) + (verticalSpacing / 2) - (chairSize/2)}px` });
+        }
+    }
+    
     return chairs;
   };
-
-  const chairs = getChairPositions(table.capacity);
+  
+  const width = table.width ?? 16;
+  const height = table.height ?? 16;
+  const chairs = getChairPositions(table.capacity, width, height);
 
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center w-40 h-40 cursor-pointer transition-transform duration-200 hover:scale-105",
-        isSelected && "scale-105"
+        "absolute cursor-pointer transition-transform duration-200 hover:scale-110",
+        isSelected && "scale-110 ring-2 ring-primary ring-offset-2 ring-offset-background rounded-md"
       )}
+      style={{ top: `${table.y}px`, left: `${table.x}px` }}
       onClick={onClick}
     >
-      {/* Chairs */}
-      {chairs.map((style, i) => (
-        <div key={i} className="absolute w-8 h-6" style={{ transform: style.transform }}>
-           <Armchair className={cn("w-full h-full transform -rotate-90", config.base)} strokeWidth={1.5} />
-        </div>
-      ))}
-      {/* Table */}
-      <div className="relative flex items-center justify-center w-24 h-24">
-        <Circle className={cn("absolute w-full h-full transition-all", config.highlight)} strokeWidth={2} />
-        <Circle className={cn("absolute w-full h-full transition-all scale-90", isSelected ? config.highlight : "fill-transparent", "hover:fill-primary/10")} strokeWidth={0} />
-        <span className={cn("text-2xl font-bold", config.base)}>
-          {table.id}
-        </span>
+        <div 
+            className={cn(
+                "relative flex items-center justify-center rounded-md border-2",
+                config.border,
+                config.bg
+            )}
+            style={{ width: `${width*4}px`, height: `${height*4}px` }}
+        >
+             {chairs.map((style, i) => (
+                <div key={i} className="absolute w-6 h-6 bg-blue-400 rounded-md" style={{ ...style }}>
+                </div>
+            ))}
+            <span className="text-2xl font-bold text-foreground">
+              {table.id}
+            </span>
       </div>
     </div>
   );
 }
+
 
 function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
     const order = selectedTable?.orderId ? getOrderByTableId(selectedTable.orderId) : null;
@@ -89,7 +111,7 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                     <span>{selectedTable ? `Table ${selectedTable.id}` : 'No Table Selected'}</span>
-                    {selectedTable && <span className={cn("text-sm font-medium", statusConfig[selectedTable.status].base)}>{statusConfig[selectedTable.status].label}</span>}
+                    {selectedTable && <span className={cn("text-sm font-medium px-2 py-1 rounded-full", statusConfig[selectedTable.status].bg, statusConfig[selectedTable.status].border.replace('border-', 'text-'))}>{statusConfig[selectedTable.status].label}</span>}
                 </CardTitle>
                 <CardDescription>
                     {order ? `Order #${order.id} - ${format(new Date(order.createdAt), 'p')}` : 'Click a table to view or create an order.'}
@@ -98,9 +120,9 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
             <CardContent className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
                 {selectedTable && order ? (
                     <div className="text-left w-full h-full flex flex-col">
-                        <div className="flex-1 space-y-2 overflow-y-auto">
+                        <div className="flex-1 space-y-2 overflow-y-auto p-1">
                             {order.items.map((item, index) => (
-                                <div key={index} className="flex justify-between items-start text-sm">
+                                <div key={index} className="flex justify-between items-start text-sm p-2 rounded-md bg-muted/50">
                                     <div>
                                         <p className="font-medium">{item.quantity}x {item.menuItem.name}</p>
                                         {item.notes && <p className="text-xs text-muted-foreground">Note: {item.notes}</p>}
@@ -147,6 +169,9 @@ export default function DashboardPage() {
   const [selectedTableId, setSelectedTableId] = useState<number | null>(mockTables.find(t => t.status === 'Occupied')?.id ?? null);
   const selectedTable = mockTables.find(t => t.id === selectedTableId) ?? null;
 
+  // The background image URL can be made dynamic in a real app (e.g., from settings)
+  const floorPlanBackgroundUrl = 'https://placehold.co/1200x800.png';
+
   return (
     <>
       <PageHeader title="Pizzeria Floor Plan" />
@@ -156,11 +181,15 @@ export default function DashboardPage() {
                 <CardHeader>
                      <Tabs defaultValue="first" className="w-full">
                         <TabsList>
-                           <TabsTrigger value="first">First Floor</TabsTrigger>
-                           <TabsTrigger value="second" disabled>Second Floor</TabsTrigger>
+                           <TabsTrigger value="first">Main Floor</TabsTrigger>
+                           <TabsTrigger value="second" disabled>Patio</TabsTrigger>
                         </TabsList>
                         <TabsContent value="first" className="pt-4">
-                            <div className="grid gap-8 grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 place-items-center">
+                           <div 
+                                className="relative h-[600px] w-full bg-cover bg-center rounded-md"
+                                style={{ backgroundImage: `url(${floorPlanBackgroundUrl})` }}
+                                data-ai-hint="wood floor"
+                            >
                                 {mockTables.map((table) => (
                                     <TableVisual 
                                         key={table.id} 
