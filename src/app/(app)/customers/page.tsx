@@ -94,4 +94,4 @@ function CustomersPage() {
     );
 }
 
-export default withAuth(CustomersPage, ['Admin' as UserRole, 'Advanced' as UserRole]);
+export default withAuth(CustomersPage, ['Admin' as UserRole, 'Advanced' as UserRole], 'crm');

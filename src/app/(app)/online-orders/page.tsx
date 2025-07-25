@@ -28,4 +28,4 @@ function OnlineOrdersPage() {
   );
 }
 
-export default withAuth(OnlineOrdersPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+export default withAuth(OnlineOrdersPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole], 'onlineOrdering');

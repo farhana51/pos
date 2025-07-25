@@ -34,4 +34,4 @@ function DeliveryPage() {
   );
 }
 
-export default withAuth(DeliveryPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+export default withAuth(DeliveryPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole], 'delivery');

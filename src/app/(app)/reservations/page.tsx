@@ -81,4 +81,4 @@ function ReservationsPage() {
     );
 }
 
-export default withAuth(ReservationsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+export default withAuth(ReservationsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole], 'reservations');

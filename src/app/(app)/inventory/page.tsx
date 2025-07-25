@@ -85,4 +85,4 @@ function InventoryPage() {
     );
 }
 
-export default withAuth(InventoryPage, ['Admin' as UserRole, 'Advanced' as UserRole]);
+export default withAuth(InventoryPage, ['Admin' as UserRole, 'Advanced' as UserRole], 'inventory');
