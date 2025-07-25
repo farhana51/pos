@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,73 +10,87 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
 
+interface LocationIQAddress {
+    place_id: string;
+    display_name: string;
+    address: {
+        name?: string;
+        house_number?: string;
+        road?: string;
+        postcode?: string;
+        country?: string;
+    }
+}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [addressSearch, setAddressSearch] = useState('');
     const [postCode, setPostCode] = useState('');
     const [flatNumber, setFlatNumber] = useState('');
     const [houseNumber, setHouseNumber] = useState('');
     const [roadName, setRoadName] = useState('');
     const country = "United Kingdom";
 
-    const [foundAddresses, setFoundAddresses] = useState<string[]>([]);
-    const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<LocationIQAddress[]>([]);
     const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
+    const [apiKey, setApiKey] = useState<string | null>(null);
 
-    const handleFindAddress = async () => {
-        if(!postCode) return;
+    const debouncedSearchTerm = useDebounce(addressSearch, 300);
+
+    useEffect(() => {
+        const key = localStorage.getItem('locationIqApiKey');
+        if (key) {
+            setApiKey(key);
+        } else {
+            console.warn("LocationIQ API Key not found in settings.");
+        }
+    }, []);
+
+    const fetchSuggestions = useCallback(async (query: string) => {
+        if (query.length < 3 || !apiKey) {
+            setSuggestions([]);
+            return;
+        }
         try {
-            // Use a public API to get a list of addresses for a full postcode
-            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}/addresses`);
+            const response = await fetch(`https://api.locationiq.com/v1/autocomplete?key=${apiKey}&q=${encodeURIComponent(query)}&countrycodes=gb&limit=5&normalizeaddress=1`);
             const data = await response.json();
-            
-            if (data.status === 200 && data.result && Array.isArray(data.result)) {
-                 // The result contains a list of detailed address objects. We format them for display.
-                 const formattedAddresses = data.result.map((addr: any) => addr.formatted_address.replace(/, ,/g, ',').split(',').slice(0, 2).join(', '));
-                 setFoundAddresses(formattedAddresses);
-                 setIsAddressPopoverOpen(true);
+            if (data && !data.error) {
+                setSuggestions(data);
+                setIsAddressPopoverOpen(true);
             } else {
-                 setFoundAddresses([]);
-                 alert("No addresses found for this postcode. Please check the postcode or enter the address manually.");
+                setSuggestions([]);
             }
         } catch (error) {
-            console.error("Failed to fetch address:", error);
-            alert("There was an error finding the address. Please enter it manually.");
+            console.error("Failed to fetch address suggestions:", error);
+            setSuggestions([]);
         }
-    }
+    }, [apiKey]);
     
-    const handleSelectAddress = (address: string) => {
-        const parts = address.split(',');
-        const line1 = parts[0]?.trim() || '';
-        const road = parts[1]?.trim() || '';
-
-        // Simple logic to separate house number/name from road
-        const roadParts = line1.split(' ');
-        if (roadParts.length > 1 && !isNaN(parseInt(roadParts[0]))) { // check if first part is a number
-            setHouseNumber(roadParts[0]);
-            setRoadName(roadParts.slice(1).join(' '));
+    useEffect(() => {
+        if (debouncedSearchTerm) {
+            fetchSuggestions(debouncedSearchTerm);
         } else {
-            setHouseNumber('');
-            setRoadName(line1);
+            setSuggestions([]);
+            setIsAddressPopoverOpen(false);
         }
-        
-        // If the second part of the address seems more like the road, use that.
-        if (road) {
-            setRoadName(road);
-        }
+    }, [debouncedSearchTerm, fetchSuggestions]);
 
-        setSelectedAddress(address);
+    const handleSelectAddress = (address: LocationIQAddress) => {
+        setAddressSearch(address.display_name);
+        setRoadName(address.address.road || '');
+        setHouseNumber(address.address.house_number || address.address.name || '');
+        setPostCode(address.address.postcode || '');
+        setFlatNumber(''); // Reset flat number as it's not provided by this API
         setIsAddressPopoverOpen(false);
     }
 
     const handleCreateOrder = () => {
         if (!customerName || !phoneNumber || !houseNumber || !roadName || !postCode) {
-            // Add some validation feedback if you want
             alert("Please fill in all required fields.");
             return;
         }
@@ -134,48 +148,41 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
                         <div className="space-y-4 pt-4 border-t">
-                             <div className="space-y-2">
-                                <Label htmlFor="post-code">Post Code</Label>
-                                <div className="flex gap-2">
-                                <Input 
-                                    id="post-code"
-                                    placeholder="e.g. SW1A 0AA"
-                                    value={postCode}
-                                    onChange={(e) => setPostCode(e.target.value)}
-                                    required
-                                />
-                                 <Popover open={isAddressPopoverOpen} onOpenChange={setIsAddressPopoverOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button 
-                                            variant="outline" 
-                                            onClick={handleFindAddress}
-                                            disabled={!postCode}
-                                            className="w-[200px] justify-between"
-                                        >
-                                           {selectedAddress ?? "Find Address"}
-                                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                        {foundAddresses.length > 0 ? (
-                                            <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
-                                                {foundAddresses.map(addr => (
-                                                    <li 
-                                                        key={addr} 
-                                                        className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
-                                                        onClick={() => handleSelectAddress(addr)}
-                                                    >
-                                                        {addr}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p className="p-4 text-sm text-muted-foreground">No addresses found.</p>
-                                        )}
-                                    </PopoverContent>
-                                </Popover>
-                                </div>
-                            </div>
+                            <Popover open={isAddressPopoverOpen} onOpenChange={setIsAddressPopoverOpen}>
+                                <PopoverAnchor asChild>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="address-search">Find Address</Label>
+                                        <Input
+                                            id="address-search"
+                                            placeholder="Start typing an address or postcode..."
+                                            value={addressSearch}
+                                            onChange={(e) => setAddressSearch(e.target.value)}
+                                            disabled={!apiKey}
+                                        />
+                                        {!apiKey && <p className="text-xs text-destructive">LocationIQ API Key not configured in Admin Settings.</p>}
+                                    </div>
+                                </PopoverAnchor>
+                                <PopoverContent className="w-[--radix-popover-anchor-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                    {suggestions.length > 0 ? (
+                                        <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
+                                            {suggestions.map(addr => (
+                                                <li 
+                                                    key={addr.place_id} 
+                                                    className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
+                                                    onMouseDown={() => handleSelectAddress(addr)} // use onMouseDown to avoid focus issues
+                                                >
+                                                    {addr.display_name}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        (debouncedSearchTerm.length > 2) && <p className="p-4 text-sm text-muted-foreground">No suggestions found.</p>
+                                    )}
+                                </PopoverContent>
+                            </Popover>
+
+                            <p className="text-sm text-muted-foreground text-center">Or enter address manually</p>
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="flat-number">Flat Number (Optional)</Label>
@@ -207,14 +214,26 @@ function NewDeliveryOrderPage() {
                                     required
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="country">Country</Label>
-                                <Input 
-                                    id="country"
-                                    value={country}
-                                    readOnly
-                                    className="bg-muted"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="post-code">Post Code</Label>
+                                    <Input
+                                        id="post-code"
+                                        placeholder="e.g. SW1A 0AA"
+                                        value={postCode}
+                                        onChange={(e) => setPostCode(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="country">Country</Label>
+                                    <Input 
+                                        id="country"
+                                        value={country}
+                                        readOnly
+                                        className="bg-muted"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -229,5 +248,18 @@ function NewDeliveryOrderPage() {
     )
 }
 
+function useDebounce<T>(value: T, delay?: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay || 500)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
 
 export default withAuth(NewDeliveryOrderPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
