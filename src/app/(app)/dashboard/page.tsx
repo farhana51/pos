@@ -104,7 +104,7 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
         <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                    <span>{selectedTable ? `Table ${selectedTable.id}` : 'No Table Selected'}</span>
+                    <span>{selectedTable ? `Table ${selectedTable.id}` : ''}</span>
                     {selectedTable && <span className={cn("text-sm font-medium px-2 py-1 rounded-full", statusConfig[selectedTable.status].bg, statusConfig[selectedTable.status].border.replace('border-', 'text-'))}>{statusConfig[selectedTable.status].label}</span>}
                 </CardTitle>
                 <CardDescription>
@@ -261,13 +261,17 @@ export default function DashboardPage() {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!draggingTable.current || !floorPlanRef.current) return;
+    
+    const { id, offsetX, offsetY } = draggingTable.current;
     const floorRect = floorPlanRef.current.getBoundingClientRect();
     
-    let newX = e.clientX - floorRect.left - draggingTable.current.offsetX;
-    let newY = e.clientY - floorRect.top - draggingTable.current.offsetY;
+    let newX = e.clientX - floorRect.left - offsetX;
+    let newY = e.clientY - floorRect.top - offsetY;
 
     // Constrain within the floor plan
-    const table = tables.find(t => t.id === draggingTable.current!.id)!;
+    const table = tables.find(t => t.id === id);
+    if (!table) return;
+
     const tableWidth = (table.width ?? 16) * 4;
     const tableHeight = (table.height ?? 16) * 4;
 
@@ -276,7 +280,7 @@ export default function DashboardPage() {
 
     setTables(prevTables =>
       prevTables.map(t =>
-        t.id === draggingTable.current!.id ? { ...t, x: newX, y: newY } : t
+        t.id === id ? { ...t, x: newX, y: newY } : t
       )
     );
   };
@@ -327,7 +331,7 @@ export default function DashboardPage() {
         </Button>
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 items-start">
-        <div className={cn("md:col-span-2", !selectedTable && "md:col-span-3")}>
+        <div className={cn("md:col-span-2", !selectedTable && "md:col-span-3 transition-all duration-300")}>
             <Card>
                 <CardHeader>
                      <Tabs defaultValue={floors[0]} className="w-full">
@@ -363,9 +367,11 @@ export default function DashboardPage() {
                 </CardHeader>
             </Card>
         </div>
-        <div className="md:col-span-1">
-            <OrderPanel selectedTable={selectedTable} />
-        </div>
+        {selectedTable && (
+            <div className="md:col-span-1">
+                <OrderPanel selectedTable={selectedTable} />
+            </div>
+        )}
         <GuestsDialog 
             table={tableForGuestInput}
             onConfirm={handleConfirmGuests}
@@ -374,7 +380,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
-
-    
