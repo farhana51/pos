@@ -20,6 +20,64 @@ import { UserRole } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { useEffect, useState } from "react"
 
+const allServiceOptions = [
+  {
+    title: "Restaurant",
+    icon: LayoutDashboard,
+    href: "/dashboard",
+    roles: ['Admin', 'Advanced', 'Basic']
+  },
+  {
+    title: "Take Away",
+    icon: Home,
+    href: "/collection",
+    roles: ['Admin', 'Advanced', 'Basic']
+  },
+  {
+    title: "Delivery",
+    icon: Car,
+    href: "/delivery",
+    roles: ['Admin', 'Advanced', 'Basic']
+  },
+  {
+    title: "Online Order",
+    icon: Globe,
+    href: "/online-orders",
+    roles: ['Admin', 'Advanced']
+  },
+  {
+    title: "Reservation",
+    icon: Calendar,
+    href: "/reservations",
+    roles: ['Admin', 'Advanced', 'Basic']
+  },
+   {
+    title: "CRM",
+    icon: Contact,
+    href: "/customers",
+    roles: ['Admin', 'Advanced']
+  },
+  {
+    title: "HR",
+    icon: Users,
+    href: "/team",
+    roles: ['Admin']
+  },
+  {
+    title: "Inventory",
+    icon: Package,
+    href: "/inventory",
+    roles: ['Admin', 'Advanced']
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    href: "/admin/settings",
+    roles: ['Admin']
+  },
+];
+
+
 const allMenuItems = [
   { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
@@ -27,7 +85,7 @@ const allMenuItems = [
   { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
-  { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
+  { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/customers", label: "Customers (CRM)", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/team", label: "Team (HR)", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
@@ -51,7 +109,7 @@ export function AppSidebar() {
 
     window.addEventListener('storage', handleStorageChange);
     // Set initial user from mockUser on mount
-    setCurrentUser(mockUser);
+    handleStorageChange();
     
     return () => {
         window.removeEventListener('storage', handleStorageChange);
@@ -59,14 +117,22 @@ export function AppSidebar() {
   }, []);
 
   const isActive = (path: string) => {
-    if (path === '/landing' || path === '/dashboard' || path === '/collection' || path === '/delivery' || path === '/online-orders') return pathname === path;
+    if (path === '/landing') return pathname === path;
+    // For dashboard and other root-level pages, we want an exact match.
+    if (['/dashboard', '/collection', '/delivery', '/online-orders', '/reservations', '/customers', '/team', '/inventory'].includes(path)) {
+      return pathname === path
+    }
     return pathname.startsWith(path)
   }
 
   const handleRoleChange = (role: UserRole) => {
     setUserRole(role);
     // Create a new object to force re-render
-    setCurrentUser({ ...mockUser, role });
+    const newUser = { ...mockUser, role };
+    setCurrentUser(newUser);
+    if(typeof window !== 'undefined'){
+      window.dispatchEvent(new Event('storage'));
+    }
   }
 
   const handleLogout = () => {
@@ -120,18 +186,20 @@ export function AppSidebar() {
                 </Select>
             </div>
             <div className="flex items-center gap-3">
-                <Avatar>
-                    <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="manager profile" />
-                    <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                    <span className="font-semibold text-sm">{currentUser.name}</span>
-                    <span className="text-xs text-muted-foreground">{currentUser.role}</span>
+                <div className="flex items-center gap-3 flex-1">
+                    <Avatar>
+                        <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="manager profile" />
+                        <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                        <span className="font-semibold text-sm">{currentUser.name}</span>
+                        <span className="text-xs text-muted-foreground">{currentUser.role}</span>
+                    </div>
                 </div>
                  <SidebarMenuButton
                     asChild
                     tooltip={{ children: "Logout" }}
-                    className="ml-auto group-data-[collapsible=icon]:ml-0"
+                    className="group-data-[collapsible=icon]:ml-0"
                     onClick={handleLogout}
                   >
                     <Link href="/login">
