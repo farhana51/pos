@@ -66,8 +66,6 @@ function SettingsPage() {
 
 
     const [printerIps, setPrinterIps] = useState<string[]>(['192.168.1.101', '', '', '', '']);
-    const [floors, setFloors] = useState<string[]>([...new Set(mockTables.map(t => t.floor))]);
-    const [newFloorName, setNewFloorName] = useState('');
 
     const handleSettingChange = (key: keyof typeof settings) => (value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -84,19 +82,9 @@ function SettingsPage() {
         setPrinterIps(newIps);
     }
 
-    const handleAddFloor = () => {
-        if (newFloorName && !floors.includes(newFloorName)) {
-            setFloors(prev => [...prev, newFloorName]);
-            setNewFloorName('');
-        } else if (floors.includes(newFloorName)) {
-             console.error("Floor already exists");
-        }
-    }
-
-
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps, floors, discountSettings });
+        console.log("Saving settings:", { settings, printerIps, discountSettings });
         localStorage.setItem('appSettings', JSON.stringify(settings));
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
         window.dispatchEvent(new Event('storage')); // Notify other components of changes
@@ -174,37 +162,6 @@ function SettingsPage() {
                                 </div>
                             </>
                         )}
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Floor Management</CardTitle>
-                        <CardDescription>Manage the different floors or sections of your restaurant.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <h4 className="text-sm font-medium mb-2">Existing Floors</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {floors.map(floor => (
-                                    <div key={floor} className="bg-muted px-3 py-1 rounded-full text-sm text-muted-foreground">{floor}</div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="new-floor">Add New Floor</Label>
-                            <div className="flex gap-2">
-                                <Input 
-                                    id="new-floor" 
-                                    type="text" 
-                                    placeholder="e.g. Rooftop Bar" 
-                                    value={newFloorName}
-                                    onChange={(e) => setNewFloorName(e.target.value)}
-                                />
-                                <Button onClick={handleAddFloor}><FilePlus2 className="mr-2" /> Add Floor</Button>
-                            </div>
-                             <p className="text-xs text-muted-foreground">Note: Added floors are not saved permanently in this demo.</p>
-                        </div>
                     </CardContent>
                 </Card>
             </div>
