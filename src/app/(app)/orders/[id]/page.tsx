@@ -304,29 +304,29 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
     const availableTables = mockTables.filter(t => t.status === 'Available' && t.id !== currentTableId);
 
     const handleTransfer = () => {
-        if (targetTableId) {
-            // Find original table and set to available
-            const oldTableIndex = mockTables.findIndex(t => t.id === currentTableId);
-            if (oldTableIndex !== -1) {
-                mockTables[oldTableIndex].status = 'Available';
-                delete mockTables[oldTableIndex].orderId;
-            }
+        if (!targetTableId) return;
 
-            // Find new table and set to occupied
-            const newTableIndex = mockTables.findIndex(t => t.id === targetTableId);
-            if (newTableIndex !== -1) {
-                mockTables[newTableIndex].status = 'Occupied';
-                mockTables[newTableIndex].orderId = orderId;
-            }
-
-            // Update the order with the new tableId
-            const orderIndex = mockOrders.findIndex(o => o.id === orderId);
-            if (orderIndex !== -1) {
-                mockOrders[orderIndex].tableId = targetTableId;
-            }
-
-            router.push(`/dashboard`);
+        // Find original table and set to available
+        const oldTableIndex = mockTables.findIndex(t => t.id === currentTableId);
+        if (oldTableIndex !== -1) {
+            mockTables[oldTableIndex].status = 'Available';
+            delete mockTables[oldTableIndex].orderId;
         }
+
+        // Find new table and set to occupied
+        const newTableIndex = mockTables.findIndex(t => t.id === targetTableId);
+        if (newTableIndex !== -1) {
+            mockTables[newTableIndex].status = 'Occupied';
+            mockTables[newTableIndex].orderId = orderId;
+        }
+
+        // Update the order with the new tableId
+        const orderIndex = mockOrders.findIndex(o => o.id === orderId);
+        if (orderIndex !== -1) {
+            mockOrders[orderIndex].tableId = targetTableId;
+        }
+        
+        router.push(`/dashboard`);
     };
 
     return (
@@ -583,7 +583,6 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
@@ -656,7 +655,11 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   };
 
   const handlePrint = () => {
-    console.log("Printing order...");
+    const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+    if (tableIndex > -1) {
+        mockTables[tableIndex].status = 'Billed';
+    }
+    router.push('/dashboard');
   }
   
   const handleCancelOrder = () => {

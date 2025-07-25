@@ -13,7 +13,6 @@ import type { Table, TableStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +21,8 @@ import { useRouter } from "next/navigation";
 
 const statusConfig: Record<TableStatus, { border: string; bg: string; label: string; }> = {
   Available: { border: "border-green-500", bg: "bg-green-500/10", label: "Available" },
-  Occupied: { border: "border-red-500", bg: "bg-red-500/10", label: "Occupied" },
+  Occupied: { border: "border-amber-500", bg: "bg-amber-500/10", label: "Occupied" },
+  Billed: { border: "border-red-500", bg: "bg-red-500/10", label: "Billed" },
   Reserved: { border: "border-purple-500", bg: "bg-purple-500/10", label: "Reserved" },
   Dirty: { border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Needs Cleaning" },
 };
@@ -147,7 +147,7 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
             </CardContent>
              <div className="p-6 pt-0">
                 <Button className="w-full" asChild disabled={!selectedTable}>
-                   <Link href={selectedTable?.status === 'Occupied' && order ? `/orders/${order.id}` : (selectedTable?.status === 'Available' ? `/orders/new?tableId=${selectedTable.id}` : '#')}>
+                   <Link href={selectedTable?.status === 'Occupied' || (selectedTable?.status === 'Billed' && order) ? `/orders/${order.id}` : (selectedTable?.status === 'Available' ? `/orders/new?tableId=${selectedTable.id}` : '#')}>
                      {order ? 'View / Edit Order' : 'Create New Order'}
                    </Link>
                 </Button>
@@ -230,7 +230,7 @@ export default function DashboardPage() {
 
     if (table.status === 'Available') {
       setTableForGuestInput(table);
-    } else if (table.status === 'Occupied') {
+    } else if (table.status === 'Occupied' || table.status === 'Billed') {
       router.push(`/orders/${table.orderId}`);
     }
     // For other statuses like 'Reserved' or 'Dirty', just select them to show info.
@@ -262,14 +262,15 @@ export default function DashboardPage() {
   const handleMouseMove = (e: MouseEvent) => {
     if (!draggingTable.current || !floorPlanRef.current) return;
     
-    const { id, offsetX, offsetY } = draggingTable.current;
+    const tableId = draggingTable.current.id;
+    const { offsetX, offsetY } = draggingTable.current;
     const floorRect = floorPlanRef.current.getBoundingClientRect();
     
     let newX = e.clientX - floorRect.left - offsetX;
     let newY = e.clientY - floorRect.top - offsetY;
 
     // Constrain within the floor plan
-    const table = tables.find(t => t.id === id);
+    const table = tables.find(t => t.id === tableId);
     if (!table) return;
 
     const tableWidth = (table.width ?? 16) * 4;
@@ -280,7 +281,7 @@ export default function DashboardPage() {
 
     setTables(prevTables =>
       prevTables.map(t =>
-        t.id === id ? { ...t, x: newX, y: newY } : t
+        t.id === tableId ? { ...t, x: newX, y: newY } : t
       )
     );
   };
@@ -288,7 +289,7 @@ export default function DashboardPage() {
   const handleMouseUp = () => {
     if (draggingTable.current) {
         const table = tables.find(t => t.id === draggingTable.current!.id);
-        if (table && table.status === 'Occupied') {
+        if (table && (table.status === 'Occupied' || table.status === 'Billed')) {
             router.push(`/orders/${table.orderId}`);
         }
     }

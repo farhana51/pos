@@ -8,7 +8,7 @@ export interface User {
   avatarUrl: string;
 }
 
-export type TableStatus = 'Available' | 'Occupied' | 'Reserved' | 'Dirty';
+export type TableStatus = 'Available' | 'Occupied' | 'Reserved' | 'Dirty' | 'Billed';
 
 export interface Table {
   id: number;
