@@ -10,6 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronsUpDown } from "lucide-react";
+
+// Mock address data for demonstration
+const mockAddressLookup = (postcode: string) => {
+    if (postcode.replace(/\s/g, '').toUpperCase() === 'SW1A0AA') {
+        return [
+            { id: 1, line1: '10', street: 'Downing Street' },
+            { id: 2, line1: '11', street: 'Downing Street' },
+            { id: 3, line1: '12', street: 'Downing Street' },
+        ];
+    }
+    return [];
+}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -20,6 +34,27 @@ function NewDeliveryOrderPage() {
     const [houseNumber, setHouseNumber] = useState('');
     const [roadName, setRoadName] = useState('');
     const country = "United Kingdom";
+
+    const [foundAddresses, setFoundAddresses] = useState<{id: number, line1: string, street: string}[]>([]);
+    const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+    const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
+
+    const handleFindAddress = () => {
+        const addresses = mockAddressLookup(postCode);
+        setFoundAddresses(addresses);
+        if(addresses.length > 0) {
+            setIsAddressPopoverOpen(true);
+        } else {
+            alert("No addresses found for this postcode. Please enter manually.");
+        }
+    }
+    
+    const handleSelectAddress = (address: {id: number, line1: string, street: string}) => {
+        setHouseNumber(address.line1);
+        setRoadName(address.street);
+        setSelectedAddress(`${address.line1} ${address.street}`);
+        setIsAddressPopoverOpen(false);
+    }
 
     const handleCreateOrder = () => {
         if (!customerName || !phoneNumber || !houseNumber || !roadName || !postCode) {
@@ -81,17 +116,50 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
                         <div className="space-y-4 pt-4 border-t">
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="post-code">Post Code</Label>
+                                <div className="flex gap-2">
                                 <Input 
                                     id="post-code"
-                                    placeholder="e.g. AB1 2CD"
+                                    placeholder="e.g. SW1A 0AA"
                                     value={postCode}
                                     onChange={(e) => setPostCode(e.target.value)}
                                     required
                                 />
+                                 <Popover open={isAddressPopoverOpen} onOpenChange={setIsAddressPopoverOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleFindAddress}
+                                            disabled={!postCode}
+                                            className="w-[200px] justify-between"
+                                        >
+                                           {selectedAddress ?? "Find Address"}
+                                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                        {foundAddresses.length > 0 ? (
+                                            <ul className="space-y-1 py-1">
+                                                {foundAddresses.map(addr => (
+                                                    <li 
+                                                        key={addr.id} 
+                                                        className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
+                                                        onClick={() => handleSelectAddress(addr)}
+                                                    >
+                                                        {addr.line1} {addr.street}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="p-4 text-sm text-muted-foreground">No addresses found.</p>
+                                        )}
+                                    </PopoverContent>
+                                </Popover>
+                                </div>
+                                <p className="text-xs text-muted-foreground">For demo, try postcode: SW1A 0AA</p>
                             </div>
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="flat-number">Flat Number (Optional)</Label>
                                     <Input 
@@ -105,18 +173,18 @@ function NewDeliveryOrderPage() {
                                     <Label htmlFor="house-number">House Name/Number</Label>
                                     <Input 
                                         id="house-number"
-                                        placeholder="e.g. 123"
+                                        placeholder="e.g. 10"
                                         value={houseNumber}
                                         onChange={(e) => setHouseNumber(e.target.value)}
                                         required
                                     />
                                 </div>
-                             </div>
-                              <div className="space-y-2">
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="road-name">Road Name</Label>
                                 <Input 
                                     id="road-name"
-                                    placeholder="e.g. Main Street"
+                                    placeholder="e.g. Downing Street"
                                     value={roadName}
                                     onChange={(e) => setRoadName(e.target.value)}
                                     required
