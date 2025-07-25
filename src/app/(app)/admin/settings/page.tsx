@@ -52,6 +52,11 @@ function SettingsPage() {
         enabled: true,
         type: 'percentage' as 'percentage' | 'amount',
     });
+
+    const [onlineOrderingApi, setOnlineOrderingApi] = useState({
+        url: '',
+        apiKey: '',
+    });
     
     useEffect(() => {
         const savedSettings = localStorage.getItem('appSettings');
@@ -61,6 +66,10 @@ function SettingsPage() {
         const savedDiscountSettings = localStorage.getItem('discountSettings');
         if (savedDiscountSettings) {
             setDiscountSettings(JSON.parse(savedDiscountSettings));
+        }
+        const savedApiSettings = localStorage.getItem('onlineOrderingApi');
+        if (savedApiSettings) {
+            setOnlineOrderingApi(JSON.parse(savedApiSettings));
         }
     }, []);
 
@@ -75,6 +84,10 @@ function SettingsPage() {
         setDiscountSettings(prev => ({...prev, [key]: value}));
     }
 
+     const handleApiSettingChange = (key: keyof typeof onlineOrderingApi, value: string) => {
+        setOnlineOrderingApi(prev => ({...prev, [key]: value}));
+    }
+
 
     const handlePrinterIpChange = (index: number, value: string) => {
         const newIps = [...printerIps];
@@ -84,9 +97,10 @@ function SettingsPage() {
 
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps, discountSettings });
+        console.log("Saving settings:", { settings, printerIps, discountSettings, onlineOrderingApi });
         localStorage.setItem('appSettings', JSON.stringify(settings));
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
+        localStorage.setItem('onlineOrderingApi', JSON.stringify(onlineOrderingApi));
         window.dispatchEvent(new Event('storage')); // Notify other components of changes
         toast({
             title: "Settings Saved",
@@ -125,6 +139,34 @@ function SettingsPage() {
                         <SettingRow id="inventory" title="Inventory Management" description="Track ingredient stock levels." isChecked={settings.inventory} onCheckedChange={handleSettingChange('inventory')} />
                         <SettingRow id="crm" title="CRM & Loyalty Program" description="Manage customer relationships and rewards." isChecked={settings.crm} onCheckedChange={handleSettingChange('crm')} />
                         <SettingRow id="suppliers" title="Suppliers & Purchase Orders" description="Manage suppliers and purchase orders." isChecked={settings.suppliers} onCheckedChange={handleSettingChange('suppliers')} />
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Online Ordering API</CardTitle>
+                        <CardDescription>Configure the API for fetching online orders from an external service.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="api-url">API URL</Label>
+                            <Input
+                                id="api-url"
+                                placeholder="https://api.example.com/orders"
+                                value={onlineOrderingApi.url}
+                                onChange={(e) => handleApiSettingChange('url', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="api-key">API Key</Label>
+                            <Input
+                                id="api-key"
+                                type="password"
+                                placeholder="Enter your API Key"
+                                value={onlineOrderingApi.apiKey}
+                                onChange={(e) => handleApiSettingChange('apiKey', e.target.value)}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 
