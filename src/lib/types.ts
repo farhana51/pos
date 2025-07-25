@@ -19,6 +19,7 @@ export interface Table {
   y: number;
   width: number;
   height: number;
+  floor: 'Main Floor' | 'Patio';
 }
 
 export interface Addon {

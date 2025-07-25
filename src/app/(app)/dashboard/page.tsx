@@ -162,6 +162,11 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
     );
 }
 
+const floorPlanBackgrounds: Record<string, {url: string, hint: string}> = {
+    "Main Floor": { url: 'https://placehold.co/1200x800.png', hint: 'wood floor' },
+    "Patio": { url: 'https://placehold.co/1200x800.png', hint: 'patio tiles' },
+}
+
 export default function DashboardPage() {
   const [tables, setTables] = useState<Table[]>(initialMockTables);
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
@@ -171,6 +176,7 @@ export default function DashboardPage() {
   const draggingTable = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
   const selectedTable = tables.find(t => t.id === selectedTableId) ?? null;
+  const floors = [...new Set(tables.map(t => t.floor))];
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
     e.preventDefault();
@@ -224,16 +230,12 @@ export default function DashboardPage() {
 
   const handleSaveLayout = () => {
     // In a real app, this would send the 'tables' state to a backend API
-    console.log("Saving new layout:", tables.map(t => ({id: t.id, x: t.x, y: t.y})));
+    console.log("Saving new layout:", tables.map(t => ({id: t.id, x: t.x, y: t.y, floor: t.floor})));
     toast({
         title: "Layout Saved",
         description: "The new table positions have been saved.",
     });
   }
-
-
-  // The background image URL can be made dynamic in a real app (e.g., from settings)
-  const floorPlanBackgroundUrl = 'https://placehold.co/1200x800.png';
 
   return (
     <>
@@ -247,28 +249,31 @@ export default function DashboardPage() {
         <div className="md:col-span-2">
             <Card>
                 <CardHeader>
-                     <Tabs defaultValue="first" className="w-full">
+                     <Tabs defaultValue={floors[0]} className="w-full">
                         <TabsList>
-                           <TabsTrigger value="first">Main Floor</TabsTrigger>
-                           <TabsTrigger value="second" disabled>Patio</TabsTrigger>
+                            {floors.map(floor => (
+                                <TabsTrigger key={floor} value={floor}>{floor}</TabsTrigger>
+                            ))}
                         </TabsList>
-                        <TabsContent value="first" className="pt-4">
-                           <div 
-                                ref={floorPlanRef}
-                                className="relative h-[600px] w-full bg-cover bg-center rounded-md border"
-                                style={{ backgroundImage: `url(${floorPlanBackgroundUrl})` }}
-                                data-ai-hint="wood floor"
-                            >
-                                {tables.map((table) => (
-                                    <TableVisual 
-                                        key={table.id} 
-                                        table={table} 
-                                        isSelected={selectedTableId === table.id}
-                                        onMouseDown={handleMouseDown}
-                                    />
-                                ))}
-                            </div>
-                        </TabsContent>
+                        {floors.map(floor => (
+                            <TabsContent key={floor} value={floor} className="pt-4">
+                               <div 
+                                    ref={floorPlanRef}
+                                    className="relative h-[600px] w-full bg-cover bg-center rounded-md border"
+                                    style={{ backgroundImage: `url(${floorPlanBackgrounds[floor]?.url ?? ''})` }}
+                                    data-ai-hint={floorPlanBackgrounds[floor]?.hint ?? ''}
+                                >
+                                    {tables.filter(t => t.floor === floor).map((table) => (
+                                        <TableVisual 
+                                            key={table.id} 
+                                            table={table} 
+                                            isSelected={selectedTableId === table.id}
+                                            onMouseDown={handleMouseDown}
+                                        />
+                                    ))}
+                                </div>
+                            </TabsContent>
+                        ))}
                     </Tabs>
                 </CardHeader>
             </Card>
