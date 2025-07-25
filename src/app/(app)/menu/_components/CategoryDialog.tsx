@@ -20,7 +20,7 @@ interface CategoryDialogProps {
   onSave: (categories: MenuCategory[]) => void;
 }
 
-export function CategoryDialog({ isOpen, setIsOpen, categories, onSave }: CategoryDialogProps) {
+export function CategoryDialog({ isOpen, setIsOpen, categories: initialCategories, onSave }: CategoryDialogProps) {
   const [localCategories, setLocalCategories] = useState<MenuCategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newSubcategoryNames, setNewSubcategoryNames] = useState<Record<string, string>>({});
@@ -28,9 +28,9 @@ export function CategoryDialog({ isOpen, setIsOpen, categories, onSave }: Catego
   useEffect(() => {
     if (isOpen) {
       // Deep copy to avoid mutating the original state until save
-      setLocalCategories(JSON.parse(JSON.stringify(categories)));
+      setLocalCategories(JSON.parse(JSON.stringify(initialCategories)));
     }
-  }, [isOpen, categories]);
+  }, [isOpen, initialCategories]);
 
   const handleAddCategory = () => {
     if (newCategoryName && !localCategories.find(c => c.name.toLowerCase() === newCategoryName.toLowerCase())) {
@@ -99,28 +99,28 @@ export function CategoryDialog({ isOpen, setIsOpen, categories, onSave }: Catego
                     <Accordion type="multiple" className="w-full">
                         {localCategories.map(category => (
                              <AccordionItem key={category.name} value={category.name}>
-                                <AccordionTrigger>
-                                    <div className="flex items-center justify-between w-full pr-2">
-                                        <span>{category.name}</span>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
-                                                    <Trash2 />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Delete Category '{category.name}'?</AlertDialogTitle>
-                                                    <AlertDialogDescription>This action cannot be undone. Items in this category will not be deleted but will need to be reassigned.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteCategory(category.name)}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </AccordionTrigger>
+                                <div className="flex items-center w-full">
+                                    <AccordionTrigger className="flex-1">
+                                            <span>{category.name}</span>
+                                    </AccordionTrigger>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0">
+                                                <Trash2 />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Category '{category.name}'?</AlertDialogTitle>
+                                                <AlertDialogDescription>This action cannot be undone. Items in this category will not be deleted but will need to be reassigned.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteCategory(category.name)}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                                 <AccordionContent>
                                     <div className="pl-4 space-y-3">
                                         <h4 className="text-sm font-medium text-muted-foreground">Subcategories</h4>
