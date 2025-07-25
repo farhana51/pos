@@ -564,7 +564,7 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
-        router.push(`/dashboard`);
+        router.push(`/landing`);
     }
 
     const handleSelectItem = (item: MenuItem) => {
@@ -710,7 +710,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             title: "Order Updated",
             description: "The order items and discount have been saved.",
         });
-        router.push('/dashboard');
+        router.push('/landing');
     }
     
   const handlePartialPayment = (amount: number, method: PaymentMethod) => {
