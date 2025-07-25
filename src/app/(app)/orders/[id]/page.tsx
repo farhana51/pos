@@ -583,6 +583,7 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
@@ -663,14 +664,24 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   }
   
   const handleCancelOrder = () => {
-    // In a real app, this would be a server action to update the order status
-    console.log(`Cancelling order #${order.id}`);
+    // Update order status
+    const orderIndex = mockOrders.findIndex(o => o.id === order.id);
+    if(orderIndex !== -1) {
+        mockOrders[orderIndex].status = 'Cancelled';
+    }
+
+    // Update table status
+    const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+    if(tableIndex !== -1) {
+        mockTables[tableIndex].status = 'Available';
+        delete mockTables[tableIndex].orderId;
+    }
+
     router.push('/dashboard');
   }
 
   const handleUpdateOrder = () => {
         // In a real app, this would be a server action to update the order
-        console.log("Updating order:", order);
         const orderIndex = mockOrders.findIndex(o => o.id === order.id);
         if (orderIndex > -1) {
             mockOrders[orderIndex] = order;
