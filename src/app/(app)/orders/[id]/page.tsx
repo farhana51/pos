@@ -12,7 +12,7 @@ import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, se
 import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order, PaymentMethod } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart, PercentCircle, Divide, List, Edit } from 'lucide-react';
+import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart, PercentCircle, Divide, List, Edit, Trash2 } from 'lucide-react';
 import { useState, use, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -214,7 +214,11 @@ function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialP
     const [splitBy, setSplitBy] = useState(2);
     const [customAmounts, setCustomAmounts] = useState<number[]>([0]);
 
-    const total = (order.items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0)) - (order.discount || 0);
+    // State for itemized splitting
+    const [itemSplits, setItemSplits] = useState<OrderItem[][]>([[]]);
+    const [unassignedItems, setUnassignedItems] = useState<OrderItem[]>([]);
+
+    const total = (order.items.reduce((sum, item) => sum + (item.menuItem.price + (item.selectedAddons?.reduce((a,c)=>a+c.price,0) || 0)) * item.quantity, 0)) - (order.discount || 0);
     const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const remainingTotal = total - totalPaid;
 
@@ -226,19 +230,67 @@ function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialP
     
     useEffect(() => {
         if(open) {
+            // Reset all states when dialog opens
             setCustomAmounts([0]);
             setSplitBy(2);
+            
+            // Deep copy items to avoid mutation
+            const initialItems = JSON.parse(JSON.stringify(order.items));
+            const flattenedItems: OrderItem[] = [];
+            initialItems.forEach((item: OrderItem) => {
+                for (let i = 0; i < item.quantity; i++) {
+                    flattenedItems.push({ ...item, quantity: 1 });
+                }
+            });
+            setUnassignedItems(flattenedItems);
+            setItemSplits([[]]);
         }
-    }, [open]);
+    }, [open, order.items]);
 
     const customTotal = customAmounts.reduce((a, b) => a + b, 0);
+
+    const handleAddPersonToSplit = () => {
+        setItemSplits(prev => [...prev, []]);
+    }
+
+    const handleRemovePersonFromSplit = (index: number) => {
+        const personItems = itemSplits[index];
+        setUnassignedItems(prev => [...prev, ...personItems]);
+        setItemSplits(prev => prev.filter((_, i) => i !== index));
+    }
+
+    const handleAssignItem = (itemIndex: number, personIndex: number) => {
+        const itemToMove = unassignedItems[itemIndex];
+        setUnassignedItems(prev => prev.filter((_, i) => i !== itemIndex));
+        setItemSplits(prev => {
+            const newSplits = [...prev];
+            newSplits[personIndex] = [...newSplits[personIndex], itemToMove];
+            return newSplits;
+        });
+    }
+    
+    const handleUnassignItem = (item: OrderItem, personIndex: number) => {
+        setUnassignedItems(prev => [...prev, item]);
+        setItemSplits(prev => {
+            const newSplits = [...prev];
+            const itemInPersonIndex = newSplits[personIndex].findIndex(i => i.menuItem.id === item.menuItem.id && Math.random() > 0.1); // Simplified find
+            if(itemInPersonIndex > -1) {
+                 newSplits[personIndex].splice(itemInPersonIndex, 1);
+            }
+            return newSplits;
+        });
+    }
+
+    const calculateSplitTotal = (items: OrderItem[]) => {
+        return items.reduce((sum, item) => sum + (item.menuItem.price + (item.selectedAddons?.reduce((a,c)=>a+c.price,0) || 0)), 0);
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="secondary" disabled={order.items.length === 0}><Users className="mr-2" /> Split Bill</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Split the Bill</DialogTitle>
                     <DialogDescription>
@@ -269,10 +321,57 @@ function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialP
                         </div>
                     </TabsContent>
                     <TabsContent value="items" className="pt-4">
-                         <div className="text-center p-8 bg-muted rounded-md text-muted-foreground">
-                            <p>This feature is coming soon!</p>
-                            <p className="text-sm">Itemised splitting will allow you to assign items to individual payers.</p>
-                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-1 border-r pr-6">
+                                <h4 className="font-semibold mb-2">Unassigned Items</h4>
+                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                    {unassignedItems.map((item, index) => (
+                                        <Card key={index} className="p-2 text-sm">
+                                            <p className="font-medium">{item.menuItem.name}</p>
+                                            <p className="text-muted-foreground">£{item.menuItem.price.toFixed(2)}</p>
+                                            <div className="flex gap-1 mt-1">
+                                                {itemSplits.map((_, pIndex) => (
+                                                    <Button key={pIndex} size="sm" variant="outline" className="text-xs h-6" onClick={() => handleAssignItem(index, pIndex)}>P{pIndex + 1}</Button>
+                                                ))}
+                                            </div>
+                                        </Card>
+                                    ))}
+                                    {unassignedItems.length === 0 && <p className='text-sm text-muted-foreground'>All items assigned.</p>}
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-semibold">Guest Bills</h4>
+                                    <Button size="sm" variant="outline" onClick={handleAddPersonToSplit}><PlusCircle className="mr-2"/> Add Person</Button>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                                    {itemSplits.map((personItems, pIndex) => {
+                                        const personTotal = calculateSplitTotal(personItems);
+                                        return (
+                                        <Card key={pIndex} className="p-4">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h5 className="font-semibold">Person {pIndex + 1}</h5>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePersonFromSplit(pIndex)}><Trash2 className="text-destructive"/></Button>
+                                            </div>
+                                            <div className="space-y-1 mb-2">
+                                                {personItems.map((item, itemIndex) => (
+                                                     <div key={itemIndex} className="flex justify-between items-center text-xs p-1 bg-muted rounded-sm" onClick={() => handleUnassignItem(item, pIndex)}>
+                                                        <span>{item.menuItem.name}</span>
+                                                        <span>£{item.menuItem.price.toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <Separator />
+                                            <div className="flex justify-between font-bold mt-2">
+                                                <span>Total:</span>
+                                                <span>£{personTotal.toFixed(2)}</span>
+                                            </div>
+                                            <Button className="w-full mt-2" size="sm" disabled={personTotal === 0} onClick={() => handlePay(personTotal)}>Pay £{personTotal.toFixed(2)}</Button>
+                                        </Card>
+                                    )})}
+                                </div>
+                            </div>
+                         </div>
                     </TabsContent>
                     <TabsContent value="amount" className="pt-4">
                         <div className="space-y-4">
@@ -289,7 +388,7 @@ function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialP
                                             setCustomAmounts(newAmounts);
                                         }}
                                     />
-                                    <Button onClick={() => handlePay(amount)}>Pay</Button>
+                                    <Button onClick={() => handlePay(amount)} disabled={!amount || amount <= 0}>Pay</Button>
                                 </div>
                             ))}
                             <Button variant="outline" onClick={() => setCustomAmounts([...customAmounts, 0])}>Add Person</Button>
@@ -298,8 +397,8 @@ function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialP
                                 <span>Total Entered:</span>
                                 <span>£{customTotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between font-bold text-destructive">
-                                <span>Remaining:</span>
+                             <div className="flex justify-between font-bold text-destructive">
+                                <span>Remaining on bill:</span>
                                 <span>£{(remainingTotal - customTotal).toFixed(2)}</span>
                             </div>
                         </div>
@@ -408,7 +507,7 @@ function PaymentDialog({ order, onSuccessfulPayment, discountAmount }: { order: 
     return (
         <Dialog>
             <DialogTrigger asChild>
-                 <Button className="bg-green-600 text-white hover:bg-green-700 w-full"><Sparkles className="mr-2" /> Finalize Bill</Button>
+                 <Button className="bg-green-600 text-white hover:bg-green-700 w-full" disabled={grandTotal <= 0}><Sparkles className="mr-2" /> Finalize Bill</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -517,9 +616,12 @@ function NewOrderPage() {
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
 
-    // For Collection orders
+    // For Collection/Delivery orders
     const orderTypeParam = searchParams.get('type') as Order['type'] | null;
     const customerNameParam = searchParams.get('customerName');
+    const customerPhoneParam = searchParams.get('phone');
+    const customerAddressParam = searchParams.get('address');
+
 
     if (!orderTypeParam && (!tableIdParam || !guestsParam)) {
         // Handle case where params are missing, maybe redirect or show an error
@@ -534,6 +636,18 @@ function NewOrderPage() {
                 type: 'Collection' as const,
                 createdAt: new Date().toISOString(),
                 customerName: customerNameParam,
+                customerPhone: customerPhoneParam,
+            }
+        }
+         if (orderTypeParam === 'Delivery') {
+            return {
+                tableId: 0, // No table for delivery
+                items: [],
+                type: 'Delivery' as const,
+                createdAt: new Date().toISOString(),
+                customerName: customerNameParam,
+                customerPhone: customerPhoneParam,
+                customerAddress: customerAddressParam,
             }
         }
         return {
@@ -553,6 +667,9 @@ function NewOrderPage() {
     const getPageTitle = () => {
         if (order.type === 'Collection') {
             return `New Take Away Order: ${order.customerName}`
+        }
+         if (order.type === 'Delivery') {
+            return `New Delivery Order: ${order.customerName}`
         }
         return `New Order - Table ${order.tableId} (Guests: ${order.guests})`
     }

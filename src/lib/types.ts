@@ -67,6 +67,7 @@ export interface Order {
   payments?: Payment[];
   customerName?: string;
   customerPhone?: string;
+  customerAddress?: string;
 }
 
 export interface Reservation {

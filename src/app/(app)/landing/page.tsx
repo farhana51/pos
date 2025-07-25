@@ -28,7 +28,7 @@ const allServiceOptions = [
   {
     title: "Delivery",
     icon: Car,
-    href: "/delivery",
+    href: "/delivery/new",
     roles: ['Admin', 'Advanced', 'Basic']
   },
    {

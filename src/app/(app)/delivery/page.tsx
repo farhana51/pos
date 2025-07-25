@@ -6,11 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { Car } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 function DeliveryPage() {
   return (
     <>
-      <PageHeader title="Delivery Orders" />
+      <PageHeader title="Delivery Orders">
+        <Button asChild>
+            <Link href="/delivery/new">New Delivery Order</Link>
+        </Button>
+      </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8">
         <Card>
           <CardHeader>
