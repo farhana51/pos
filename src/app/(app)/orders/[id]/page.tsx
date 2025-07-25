@@ -348,6 +348,9 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
     const [appliedDiscount, setAppliedDiscount] = useState(0);
     const [customDiscount, setCustomDiscount] = useState<number | string>('');
 
+    const canApplyDiscount = ['Admin', 'Advanced'].includes(mockUser.role);
+
+
     useEffect(() => {
         const savedSettings = localStorage.getItem('discountSettings');
         if (savedSettings) {
@@ -408,7 +411,7 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
                         <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total to Pay</span> <span>£{grandTotal.toFixed(2)}</span></div>
                     </div>
                     
-                    {discountSettings.enabled && (
+                    {discountSettings.enabled && canApplyDiscount && (
                         <>
                         <Separator />
                         <div className="space-y-3">

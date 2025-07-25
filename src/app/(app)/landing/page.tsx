@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar, LogOut } from "lucide-react";
@@ -45,7 +46,7 @@ const allServiceOptions = [
     title: "CRM",
     icon: Contact,
     href: "/customers",
-    roles: ['Admin', 'Advanced']
+    roles: ['Admin'] // Now only Admin
   },
   {
     title: "HR",
@@ -57,7 +58,7 @@ const allServiceOptions = [
     title: "Inventory",
     icon: Package,
     href: "/inventory",
-    roles: ['Admin', 'Advanced']
+    roles: ['Admin'] // Now only Admin
   },
   {
     title: "Reports",
@@ -71,26 +72,31 @@ const allServiceOptions = [
     href: "/admin/settings",
     roles: ['Admin']
   },
+  { // New consolidated settings for Advanced users
+    title: "Settings",
+    icon: Settings,
+    href: "/settings",
+    roles: ['Advanced']
+  }
 ];
 
 export default function LandingPage() {
-  const { toast } = useToast();
   const serviceOptions = allServiceOptions.filter(option => option.roles.includes(mockUser.role));
   const isBasicUser = mockUser.role === 'Basic';
-  const router = useRouter();
+  const isAdvancedUser = mockUser.role === 'Advanced';
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className={cn("w-full", isBasicUser ? "max-w-4xl" : "max-w-6xl")}>
+        <div className={cn("w-full", isBasicUser || isAdvancedUser ? "max-w-4xl" : "max-w-6xl")}>
             <div className={cn(
                 "grid gap-6",
-                 isBasicUser 
+                 isBasicUser || isAdvancedUser
                     ? "grid-cols-1 md:grid-cols-4" 
                     : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5"
             )}>
                 {serviceOptions.map((option) => (
-                   <Link key={option.title} href={option.href} passHref>
+                   <Link key={option.title + option.href} href={option.href} passHref>
                         <Card
                             className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card cursor-pointer h-40 flex flex-col items-center justify-center text-center p-4"
                         >
