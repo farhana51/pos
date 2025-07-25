@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { mockUser, setUserRole, hasPermission, logoutUser } from "@/lib/data"
+import { mockUser, setUserRole, hasPermission, logoutUser, mockOrders } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { UserRole } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
@@ -27,7 +27,7 @@ const allMenuItems = [
   { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "restaurant" },
   { href: "/collection", label: "Collection", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "collection" },
   { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "delivery" },
-  { href: "/live-orders", label: "Live Orders", icon: Radio, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] }, // Often dynamic, so no setting
+  { href: "/live-orders", label: "Live Orders", icon: Radio, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], isDynamic: true },
   { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "onlineOrdering" },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "reservations" },
@@ -101,6 +101,9 @@ export function AppSidebar() {
     logoutUser();
     router.push('/login');
   }
+  
+  const pendingOrdersCount = mockOrders.filter(o => o.status === 'Pending' && (o.type === 'Collection' || o.type === 'Delivery' || o.type === 'Online')).length;
+
 
   const menuItems = allMenuItems.filter(item => {
     // Check role permission
@@ -111,6 +114,11 @@ export function AppSidebar() {
     const settingKey = item.setting as keyof typeof appSettings;
     if (item.setting && !appSettings[settingKey]) {
       return false;
+    }
+
+    // Handle dynamic visibility for live orders
+    if (item.isDynamic) {
+        return pendingOrdersCount > 0;
     }
 
     return true;
@@ -139,6 +147,9 @@ export function AppSidebar() {
                 <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
+                   {item.label === 'Live Orders' && pendingOrdersCount > 0 && (
+                     <span className="ml-auto text-xs font-bold">{pendingOrdersCount}</span>
+                   )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -188,5 +199,3 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
-
-    

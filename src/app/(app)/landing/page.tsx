@@ -305,7 +305,7 @@ function UserLandingPage() {
     };
   }, []);
 
-  const pendingOrders = mockOrders.filter(o => o.status === 'Pending' && (o.type === 'Collection' || o.type === 'Delivery'));
+  const pendingOrders = mockOrders.filter(o => o.status === 'Pending' && (o.type === 'Collection' || o.type === 'Delivery' || o.type === 'Online'));
 
   const serviceOptions = allServiceOptions.filter(option => {
     // Check role permission
@@ -381,5 +381,3 @@ function LandingPage() {
 }
 
 export default withAuth(LandingPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
-
-    
