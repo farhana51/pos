@@ -463,6 +463,7 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -516,7 +517,10 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
-
+        toast({
+            title: "Order Sent to Kitchen",
+            description: `Order #${newOrderId} has been sent for preparation.`
+        })
         router.push(`/orders/${newOrderId}`);
     }
 
@@ -533,7 +537,7 @@ function NewOrderPage() {
         <>
             <PageHeader title={`New Order - Table ${tableId} (Guests: ${guests})`} />
             <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
-                 <div className="md:col-span-2 h-full">
+                <div className="md:col-span-2 h-full">
                     <MenuGrid onSelectItem={handleSelectItem} />
                 </div>
                 <div className="md:col-span-1 h-full">
@@ -645,7 +649,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
                     <CardTitle>Order Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={() => {}} />
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={() => toast({ title: "Order Sent to Kitchen" })} />
                 </CardContent>
             </Card>
             <Card>
