@@ -352,9 +352,11 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
 
 
     useEffect(() => {
-        const savedSettings = localStorage.getItem('discountSettings');
-        if (savedSettings) {
-            setDiscountSettings(JSON.parse(savedSettings));
+        if(typeof window !== 'undefined'){
+            const savedSettings = localStorage.getItem('discountSettings');
+            if (savedSettings) {
+                setDiscountSettings(JSON.parse(savedSettings));
+            }
         }
     }, []);
 
