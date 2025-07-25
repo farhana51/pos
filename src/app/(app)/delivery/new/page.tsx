@@ -31,25 +31,15 @@ function NewDeliveryOrderPage() {
     const handleFindAddress = async () => {
         if(!postCode) return;
         try {
-            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}`);
+            // Use the /addresses endpoint to get a list of addresses for a full postcode
+            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}/addresses`);
             const data = await response.json();
             
-            if (data.status === 200 && data.result) {
-                // The postcodes.io "postcode" endpoint doesn't give a nicely formatted list of addresses.
-                // It's better to use a service designed for address lookup (like Address lookup from Royal Mail)
-                // or use their autocomplete feature. For this demo, we'll just show the postcode and town.
-                // A better free API might be needed for full address lists.
-                // For demonstration, let's create some sample addresses from the response.
-                 const { admin_district, region } = data.result;
-                 // A real implementation would list individual addresses. We'll simulate this.
-                 const simulatedAddresses = [
-                     `1 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
-                     `10 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
-                     `25 Delivery Road, ${admin_district}, ${postCode.toUpperCase()}`,
-                 ]
-                 setFoundAddresses(simulatedAddresses);
+            if (data.status === 200 && data.result.addresses.length > 0) {
+                 // The result contains a list of detailed address objects. We format them for display.
+                 const formattedAddresses = data.result.addresses.map((addr: any) => addr.formatted_address.replace(/, ,/g, ',').split(',').slice(0, 2).join(', '));
+                 setFoundAddresses(formattedAddresses);
                  setIsAddressPopoverOpen(true);
-
             } else {
                  setFoundAddresses([]);
                  alert("No addresses found for this postcode. Please check the postcode or enter the address manually.");
@@ -61,14 +51,25 @@ function NewDeliveryOrderPage() {
     }
     
     const handleSelectAddress = (address: string) => {
-        // This is a simplified parsing logic. A real implementation might be more robust.
         const parts = address.split(',');
-        const houseAndRoad = parts[0].trim().split(' ');
-        const house = houseAndRoad.shift() || '';
-        const road = houseAndRoad.join(' ');
+        const line1 = parts[0]?.trim() || '';
+        const road = parts[1]?.trim() || '';
+
+        // Simple logic to separate house number/name from road
+        const roadParts = line1.split(' ');
+        if (roadParts.length > 1) {
+            setHouseNumber(roadParts[0]);
+            setRoadName(roadParts.slice(1).join(' '));
+        } else {
+            setHouseNumber('');
+            setRoadName(line1);
+        }
         
-        setHouseNumber(house);
-        setRoadName(road);
+        // If the second part of the address seems more like the road, use that.
+        if (road) {
+            setRoadName(road);
+        }
+
         setSelectedAddress(address);
         setIsAddressPopoverOpen(false);
     }
@@ -133,7 +134,7 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
                         <div className="space-y-4 pt-4 border-t">
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="post-code">Post Code</Label>
                                 <div className="flex gap-2">
                                 <Input 
