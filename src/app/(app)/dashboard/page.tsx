@@ -231,7 +231,7 @@ export default function DashboardPage() {
   const selectedTable = tables.find(t => t.id === selectedTableId) ?? null;
   const [tableForGuestInput, setTableForGuestInput] = useState<Table | null>(null);
 
-  const floors = [...new Set(tables.map(t => t.floor))];
+  const floors = [...new Set(initialMockTables.map(t => t.floor))];
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
     e.preventDefault();
@@ -303,6 +303,7 @@ export default function DashboardPage() {
 
   const handleConfirmGuests = (guests: number) => {
         if (tableForGuestInput) {
+            // This is the correct flow: go to the new order page.
             router.push(`/orders/new?tableId=${tableForGuestInput.id}&guests=${guests}`);
         }
         setTableForGuestInput(null);
@@ -360,3 +361,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
