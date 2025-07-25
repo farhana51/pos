@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import withAuth from "@/components/withAuth";
-import { useToast } from "@/hooks/use-toast";
 import { mockTables } from "@/lib/data";
 import { UserRole } from "@/lib/types";
 import { FilePlus2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id: string, title:string, description: string, isChecked: boolean, onCheckedChange: (checked: boolean) => void }) {
     return (
@@ -29,7 +29,6 @@ function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id
 }
 
 function SettingsPage() {
-    const { toast } = useToast();
     const [settings, setSettings] = useState({
         reservations: true,
         inventory: true,
@@ -44,6 +43,20 @@ function SettingsPage() {
         labelPrinter: true,
     });
 
+    const [discountSettings, setDiscountSettings] = useState({
+        enabled: true,
+        type: 'percentage' as 'percentage' | 'amount',
+        value: 10,
+    });
+
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('discountSettings');
+        if (savedSettings) {
+            setDiscountSettings(JSON.parse(savedSettings));
+        }
+    }, []);
+
+
     const [printerIps, setPrinterIps] = useState<string[]>(['192.168.1.101', '', '', '', '']);
     const [floors, setFloors] = useState<string[]>([...new Set(mockTables.map(t => t.floor))]);
     const [newFloorName, setNewFloorName] = useState('');
@@ -51,6 +64,10 @@ function SettingsPage() {
     const handleSettingChange = (key: keyof typeof settings) => (value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
+
+    const handleDiscountSettingChange = (key: keyof typeof discountSettings) => (value: any) => {
+        setDiscountSettings(prev => ({...prev, [key]: value}));
+    }
 
     const handlePrinterIpChange = (index: number, value: string) => {
         const newIps = [...printerIps];
@@ -70,7 +87,8 @@ function SettingsPage() {
 
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps, floors });
+        console.log("Saving settings:", { settings, printerIps, floors, discountSettings });
+        localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
     }
 
   return (
@@ -104,6 +122,52 @@ function SettingsPage() {
                         <SettingRow id="online-ordering" title="Online Orders" description="Accept orders from your website." isChecked={settings.onlineOrdering} onCheckedChange={handleSettingChange('onlineOrdering')} />
                         <SettingRow id="collection" title="Collection / Takeaway" description="Allow customers to order for pickup." isChecked={settings.collection} onCheckedChange={handleSettingChange('collection')} />
                         <SettingRow id="delivery-channel" title="Delivery" description="Offer a delivery service." isChecked={settings.deliveryChannel} onCheckedChange={handleSettingChange('deliveryChannel')} />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Discount Settings</CardTitle>
+                        <CardDescription>Configure discounts for orders.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <SettingRow 
+                            id="discount-enabled"
+                            title="Enable Discounts"
+                            description="Allow staff to apply discounts to orders during payment."
+                            isChecked={discountSettings.enabled}
+                            onCheckedChange={handleDiscountSettingChange('enabled')}
+                        />
+                         {discountSettings.enabled && (
+                            <>
+                                <div>
+                                    <Label>Discount Type</Label>
+                                    <RadioGroup 
+                                        value={discountSettings.type} 
+                                        onValueChange={handleDiscountSettingChange('type')}
+                                        className="mt-2"
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="percentage" id="r-percentage" />
+                                            <Label htmlFor="r-percentage">Percentage (%)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="amount" id="r-amount" />
+                                            <Label htmlFor="r-amount">Fixed Amount (£)</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                                <div>
+                                    <Label htmlFor="discount-value">Discount Value</Label>
+                                    <Input 
+                                        id="discount-value"
+                                        type="number"
+                                        value={discountSettings.value}
+                                        onChange={(e) => handleDiscountSettingChange('value')(parseFloat(e.target.value))}
+                                        placeholder={discountSettings.type === 'percentage' ? 'e.g., 10 for 10%' : 'e.g., 5 for £5.00'}
+                                    />
+                                </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
 

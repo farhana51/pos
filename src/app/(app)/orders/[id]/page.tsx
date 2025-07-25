@@ -12,17 +12,18 @@ import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, se
 import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order, PaymentMethod } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart } from 'lucide-react';
-import { useState, use } from 'react';
+import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart, PercentCircle } from 'lucide-react';
+import { useState, use, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/components/withAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 
 const getOrderById = (id: number): Order | undefined => {
@@ -204,7 +205,6 @@ function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder }:
 function BillSplittingDialog({ items }: { items: OrderItem[] }) {
     const [splitItems, setSplitItems] = useState<Record<number, OrderItem[]>>({ 1: [], 2: [] });
     const [selectedBill, setSelectedBill] = useState<number>(1);
-    const { toast } = useToast();
 
     const unassignedItems = items.filter(
         item => ![...splitItems[1], ...splitItems[2]].some(splitItem => splitItem.menuItem.id === item.menuItem.id)
@@ -281,7 +281,7 @@ function BillSplittingDialog({ items }: { items: OrderItem[] }) {
                  <DialogFooter>
                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
                     <Button onClick={() => {
-                        // In a real app, this would perform some action. Here we just show a toast.
+                        // In a real app, this would perform some action.
                         console.log('Bills split:', splitItems);
                     }}>Confirm Split</Button>
                 </DialogFooter>
@@ -293,7 +293,6 @@ function BillSplittingDialog({ items }: { items: OrderItem[] }) {
 function TableTransferDialog({ orderId, currentTableId }: { orderId: number, currentTableId: number }) {
     const [targetTableId, setTargetTableId] = useState<number | null>(null);
     const router = useRouter();
-    const { toast } = useToast();
 
     const availableTables = mockTables.filter(t => t.status === 'Available' && t.id !== currentTableId);
 
@@ -342,37 +341,61 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
     )
 }
 
-function PaymentDialog({ order }: { order: Order }) {
+function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccessfulPayment: (paymentMethod: PaymentMethod, discountApplied: number) => void; }) {
     const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-    const { toast } = useToast();
     const router = useRouter();
+    const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage', value: 0 });
+    const [appliedDiscount, setAppliedDiscount] = useState(0);
+    const [customDiscount, setCustomDiscount] = useState<number | string>('');
 
-    const grandTotal = order.items.reduce((sum, item) => {
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('discountSettings');
+        if (savedSettings) {
+            setDiscountSettings(JSON.parse(savedSettings));
+        }
+    }, []);
+
+    const subtotal = order.items.reduce((sum, item) => {
         const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
         const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
         return sum + itemTotal;
     }, 0);
 
-    const handlePayment = () => {
-        if (paymentMethod) {
-            // Update order status
-            const orderIndex = mockOrders.findIndex(o => o.id === order.id);
-            if(orderIndex !== -1) {
-                mockOrders[orderIndex].status = 'Paid';
-                mockOrders[orderIndex].paymentMethod = paymentMethod as PaymentMethod;
-            }
+    const discountAmount = appliedDiscount;
+    const grandTotal = subtotal - discountAmount;
 
-            // Update table status
-            const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
-            if(tableIndex !== -1) {
-                mockTables[tableIndex].status = 'Available';
-                delete mockTables[tableIndex].orderId;
-            }
 
-            router.push('/dashboard');
+    const handleApplyDiscount = () => {
+        const value = typeof customDiscount === 'string' ? parseFloat(customDiscount) : customDiscount;
+        if (isNaN(value) || value < 0) {
+            setAppliedDiscount(0);
+            return;
+        }
+
+        if (discountSettings.type === 'percentage') {
+            const discount = (subtotal * value) / 100;
+            setAppliedDiscount(discount > subtotal ? subtotal : discount);
+        } else {
+            setAppliedDiscount(value > subtotal ? subtotal : value);
         }
     }
 
+    const handleApplyDefaultDiscount = () => {
+         if (discountSettings.type === 'percentage') {
+            const discount = (subtotal * discountSettings.value) / 100;
+            setAppliedDiscount(discount > subtotal ? subtotal : discount);
+        } else {
+            setAppliedDiscount(discountSettings.value > subtotal ? subtotal : discountSettings.value);
+        }
+        setCustomDiscount('');
+    }
+
+
+    const handlePayment = () => {
+        if (paymentMethod) {
+            onSuccessfulPayment(paymentMethod as PaymentMethod, discountAmount);
+        }
+    }
 
     const paymentOptions = [
         { id: 'Cash', name: 'Cash', icon: HandCoins },
@@ -388,9 +411,40 @@ function PaymentDialog({ order }: { order: Order }) {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Finalize Payment</DialogTitle>
-                    <DialogDescription>Total amount to be paid: <span className="font-bold text-foreground">£{grandTotal.toFixed(2)}</span></DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
+                <div className="py-4 space-y-4">
+                     <div className="space-y-2">
+                        <div className="flex justify-between"><span>Subtotal</span> <span>£{subtotal.toFixed(2)}</span></div>
+                        {appliedDiscount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span> <span>- £{appliedDiscount.toFixed(2)}</span></div>}
+                        <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total to Pay</span> <span>£{grandTotal.toFixed(2)}</span></div>
+                    </div>
+                    
+                    {discountSettings.enabled && (
+                        <>
+                        <Separator />
+                        <div className="space-y-3">
+                             <h4 className="text-sm font-medium">Apply Discount</h4>
+                             <div className="flex gap-2">
+                                <Input 
+                                    type="number"
+                                    placeholder={discountSettings.type === 'percentage' ? 'Custom %' : 'Custom £'}
+                                    value={customDiscount}
+                                    onChange={(e) => setCustomDiscount(e.target.value)}
+                                />
+                                <Button variant="secondary" onClick={handleApplyDiscount}>Apply</Button>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <Button variant="outline" className="w-full" onClick={handleApplyDefaultDiscount}>
+                                    Apply Default ({discountSettings.value}{discountSettings.type === 'percentage' ? '%' : '£'})
+                                </Button>
+                                <Button variant="ghost" onClick={() => setAppliedDiscount(0)}>Remove</Button>
+                             </div>
+                        </div>
+                        </>
+                    )}
+
+                    <Separator />
+                    
                     <Label>Select Payment Method</Label>
                     <div className="grid grid-cols-3 gap-4 mt-2">
                         {paymentOptions.map(opt => (
@@ -408,7 +462,7 @@ function PaymentDialog({ order }: { order: Order }) {
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={handlePayment} disabled={!paymentMethod}>Process Payment</Button>
+                    <Button onClick={handlePayment} disabled={!paymentMethod}>Process Payment ( £{grandTotal.toFixed(2)} )</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -611,12 +665,6 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
     router.push('/dashboard');
   }
 
-  const grandTotal = order.items.reduce((sum, item) => {
-    const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-    const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-    return sum + itemTotal;
-  }, 0);
-
   const handleUpdateOrder = () => {
         // In a real app, this would be a server action to update the order
         console.log("Updating order:", order);
@@ -627,11 +675,30 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         router.push('/landing');
     }
 
+  const handleSuccessfulPayment = (paymentMethod: PaymentMethod, discountApplied: number) => {
+    // Update order status
+    const orderIndex = mockOrders.findIndex(o => o.id === order.id);
+    if(orderIndex !== -1) {
+        mockOrders[orderIndex].status = 'Paid';
+        mockOrders[orderIndex].paymentMethod = paymentMethod;
+        mockOrders[orderIndex].discount = discountApplied;
+    }
+
+    // Update table status
+    const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+    if(tableIndex !== -1) {
+        mockTables[tableIndex].status = 'Available';
+        delete mockTables[tableIndex].orderId;
+    }
+
+    router.push('/dashboard');
+  }
+
   return (
     <>
       <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
         <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
-        <PaymentDialog order={order} />
+        <PaymentDialog order={order} onSuccessfulPayment={handleSuccessfulPayment} />
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
         <div className="md:col-span-2 h-full">

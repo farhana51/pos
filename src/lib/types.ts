@@ -58,6 +58,7 @@ export interface Order {
   status: OrderStatus;
   paymentMethod?: PaymentMethod;
   guests?: number;
+  discount?: number;
 }
 
 export interface Reservation {
