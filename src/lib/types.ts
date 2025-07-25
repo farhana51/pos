@@ -23,7 +23,7 @@ export interface Table {
 }
 
 export interface Addon {
-  id?: number;
+  id: number;
   name: string;
   price: number;
 }
@@ -37,6 +37,19 @@ export interface MenuItem {
   subcategory?: string;
   addons?: Addon[];
 }
+
+export interface SetMenuCourse {
+  title: string;
+  items: MenuItem[];
+}
+
+export interface SetMenu {
+    id: number;
+    name: string;
+    price: number;
+    courses: SetMenuCourse[];
+}
+
 
 export interface OrderItem {
   menuItem: MenuItem;

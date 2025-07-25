@@ -1,4 +1,4 @@
-import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer } from './types';
+import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer, SetMenu } from './types';
 
 // --- User Data ---
 // This is now the single source of truth for all users/team members.
@@ -132,11 +132,29 @@ export const mockMenu: MenuItem[] = [
   },
   { id: 2, name: 'Seared Scallops', description: 'With butternut squash purée and pancetta crisps.', price: 22.00, category: 'Mains' },
   { id: 3, name: 'Burrata Caprese', description: 'Fresh burrata, heirloom tomatoes, basil, and balsamic glaze.', price: 12.00, category: 'Starters' },
-  { id: 4, name: 'Classic Margherita Pizza', description: 'Tomato, mozzarella, and fresh basil.', price: 14.00, category: 'Mains' },
+  { id: 4, name: 'Classic Margherita Pizza', description: 'Tomato, mozzarella, and fresh basil.', price: 14.00, category: 'Mains', subcategory: 'Pizza' },
   { id: 5, name: 'Chocolate Lava Cake', description: 'Molten chocolate center, served with vanilla bean ice cream.', price: 9.50, category: 'Desserts' },
   { id: 6, name: 'Old Fashioned', description: 'Whiskey, bitters, sugar, and an orange twist.', price: 11.00, category: 'Drinks', subcategory: 'Cocktails' },
   { id: 7, name: 'Sparkling Water', description: 'San Pellegrino (750ml)', price: 4.50, category: 'Drinks', subcategory: 'Non-Alcoholic' },
   { id: 8, name: 'Fries', description: 'With truffle oil and parmesan.', price: 6.00, category: 'Sides' },
+];
+
+export const mockSetMenus: SetMenu[] = [
+    {
+        id: 1,
+        name: 'Lunch Special (2 Courses)',
+        price: 25.00,
+        courses: [
+            {
+                title: 'Starters',
+                items: [mockMenu.find(m => m.id === 3)!]
+            },
+            {
+                title: 'Mains',
+                items: [mockMenu.find(m => m.id === 1)!, mockMenu.find(m => m.id === 4)!]
+            }
+        ]
+    }
 ];
 
 export const mockOrders: Order[] = [];
