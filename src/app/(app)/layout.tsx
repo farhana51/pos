@@ -95,7 +95,7 @@ export default function AppLayout({
             <AppHeader />
             <main className="flex-1 overflow-y-auto">{children}</main>
              <Button
-                variant="destructive"
+                variant="outline"
                 className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg"
                 onClick={handleLogout}
             >
