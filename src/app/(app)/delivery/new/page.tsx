@@ -15,10 +15,10 @@ function NewDeliveryOrderPage() {
     const router = useRouter();
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [postCode, setPostCode] = useState('');
     const [flatNumber, setFlatNumber] = useState('');
     const [houseNumber, setHouseNumber] = useState('');
     const [roadName, setRoadName] = useState('');
-    const [postCode, setPostCode] = useState('');
     const country = "United Kingdom";
 
     const handleCreateOrder = () => {
@@ -81,6 +81,16 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
                         <div className="space-y-4 pt-4 border-t">
+                             <div className="space-y-2">
+                                <Label htmlFor="post-code">Post Code</Label>
+                                <Input 
+                                    id="post-code"
+                                    placeholder="e.g. AB1 2CD"
+                                    value={postCode}
+                                    onChange={(e) => setPostCode(e.target.value)}
+                                    required
+                                />
+                            </div>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="flat-number">Flat Number (Optional)</Label>
@@ -112,26 +122,14 @@ function NewDeliveryOrderPage() {
                                     required
                                 />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="post-code">Post Code</Label>
-                                    <Input 
-                                        id="post-code"
-                                        placeholder="e.g. AB1 2CD"
-                                        value={postCode}
-                                        onChange={(e) => setPostCode(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="country">Country</Label>
-                                    <Input 
-                                        id="country"
-                                        value={country}
-                                        readOnly
-                                        className="bg-muted"
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="country">Country</Label>
+                                <Input 
+                                    id="country"
+                                    value={country}
+                                    readOnly
+                                    className="bg-muted"
+                                />
                             </div>
                         </div>
                     </CardContent>
