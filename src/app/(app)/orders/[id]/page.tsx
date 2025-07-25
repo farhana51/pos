@@ -583,7 +583,6 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
@@ -711,7 +710,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   return (
     <>
       <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
-        <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
+        <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Receipt</Button>
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
         <div className="md:col-span-2 h-full">
