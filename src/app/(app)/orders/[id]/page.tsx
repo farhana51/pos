@@ -3,6 +3,7 @@
 'use client'
 
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
+import React, { use } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -35,7 +36,6 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [notes, setNotes] = useState('');
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
 
   const selectedItem = triggerElement;
 
@@ -71,10 +71,6 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
         selectedAddons,
         notes,
       });
-      toast({
-          title: "Item Added",
-          description: `${selectedItem.name} has been added to the order.`,
-      })
       handleOpenChange(false);
     }
   };
@@ -121,7 +117,7 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   );
 }
 
-function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void }) {
+function OrderItemsTable({ items, onUpdateItems, onCreateOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onCreateOrder: () => void }) {
   const subtotal = items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
@@ -196,7 +192,7 @@ function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdat
         )}
       </CardContent>
        {items.length > 0 && (
-        <CardFooter className="flex-col !items-start gap-2">
+        <CardFooter className="flex-col !items-stretch gap-4 !p-4 border-t">
             <div className="flex justify-between w-full text-sm">
                 <span>Subtotal</span>
                 <span>£{subtotal.toFixed(2)}</span>
@@ -209,6 +205,9 @@ function OrderItemsTable({ items, onUpdateItems }: { items: OrderItem[], onUpdat
                 <span>Grand Total</span>
                 <span>£{grandTotal.toFixed(2)}</span>
             </div>
+            <Button onClick={onCreateOrder} disabled={items.length === 0} size="lg">
+                Create Order
+            </Button>
         </CardFooter>
       )}
     </Card>
@@ -487,8 +486,16 @@ function NewOrderPage() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
     
-    const tableId = parseInt(searchParams.get('tableId')!, 10);
-    const guests = parseInt(searchParams.get('guests')!, 10);
+    const tableIdParam = searchParams.get('tableId');
+    const guestsParam = searchParams.get('guests');
+
+    if (!tableIdParam || !guestsParam) {
+        // Handle case where params are missing, maybe redirect or show an error
+        return <div>Error: Missing table or guest information.</div>;
+    }
+    
+    const tableId = parseInt(tableIdParam, 10);
+    const guests = parseInt(guestsParam, 10);
     
     const [order, setOrder] = useState<Omit<Order, 'id' | 'status'>>({
         tableId: tableId,
@@ -532,10 +539,6 @@ function NewOrderPage() {
             mockTables[tableIndex].orderId = newOrderId;
         }
 
-        toast({
-            title: "Order Created",
-            description: `Order #${newOrderId} has been created for Table #${tableId}.`,
-        });
         router.push(`/orders/${newOrderId}`);
     }
 
@@ -550,17 +553,13 @@ function NewOrderPage() {
 
     return (
         <>
-            <PageHeader title={`New Order - Table ${tableId} (Guests: ${guests})`}>
-                <Button onClick={handleCreateOrder} disabled={order.items.length === 0}>
-                    Create Order
-                </Button>
-            </PageHeader>
+            <PageHeader title={`New Order - Table ${tableId} (Guests: ${guests})`} />
             <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
                  <div className="md:col-span-2 h-full">
                     <MenuGrid onSelectItem={handleSelectItem} />
                 </div>
                 <div className="md:col-span-1 h-full">
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={handleCreateOrder} />
                 </div>
                  {itemToCustomize && (
                     <AddItemDialog
@@ -620,11 +619,6 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const handleCancelOrder = () => {
     // In a real app, this would be a server action to update the order status
     console.log(`Cancelling order #${order.id}`);
-    toast({
-      variant: "destructive",
-      title: "Order Cancelled",
-      description: `Order #${order.id} has been cancelled.`,
-    });
     router.push('/dashboard');
   }
 
@@ -669,13 +663,13 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             </Card>
         </div>
         <div className="md:col-span-2 space-y-6">
-          <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} />
+          <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={() => {}} />
            <Card>
               <CardHeader>
                 <CardTitle>Modify Order</CardTitle>
                 <CardDescription>Add new items to this order.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
+              </Header>
+              <CardContent>
                  <MenuGrid onSelectItem={handleSelectItem} />
               </CardContent>
             </Card>
@@ -695,8 +689,8 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
 
 
 function OrderDetailsPage() {
-  const params = useParams();
-  const id = params.id as string;
+  const params = useParams<{ id: string }>();
+  const id = use(params).id;
 
   if (id === 'new') {
     return <NewOrderPage />;
