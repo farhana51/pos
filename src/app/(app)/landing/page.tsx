@@ -2,14 +2,15 @@
 
 'use client'
 
-import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar, LogOut } from "lucide-react";
+import { BarChart2, BookOpen, Car, Contact, Globe, Home, LayoutDashboard, Package, Settings, Users, Calendar, LogOut, Radio } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { logoutUser, mockUser } from "@/lib/data";
+import { logoutUser, mockUser, mockOrders } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 const allServiceOptions = [
   {
@@ -29,6 +30,13 @@ const allServiceOptions = [
     icon: Car,
     href: "/delivery",
     roles: ['Admin', 'Advanced', 'Basic']
+  },
+   {
+    title: "Live Orders",
+    icon: Radio,
+    href: "/live-orders",
+    roles: ['Admin', 'Advanced', 'Basic'],
+    isDynamic: true,
   },
   {
     title: "Online Order",
@@ -81,7 +89,15 @@ const allServiceOptions = [
 ];
 
 export default function LandingPage() {
-  const serviceOptions = allServiceOptions.filter(option => option.roles.includes(mockUser.role));
+  const pendingOrders = mockOrders.filter(o => o.status === 'Pending' && (o.type === 'Collection' || o.type === 'Delivery'));
+
+  const serviceOptions = allServiceOptions.filter(option => {
+    if (option.isDynamic) {
+        return pendingOrders.length > 0 && option.roles.includes(mockUser.role);
+    }
+    return option.roles.includes(mockUser.role);
+  });
+  
   const isBasicUser = mockUser.role === 'Basic';
   const isAdvancedUser = mockUser.role === 'Advanced';
 
@@ -98,8 +114,11 @@ export default function LandingPage() {
                 {serviceOptions.map((option) => (
                    <Link key={option.title + option.href} href={option.href} passHref>
                         <Card
-                            className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card cursor-pointer h-40 flex flex-col items-center justify-center text-center p-4"
+                            className="transform transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl bg-card cursor-pointer h-40 flex flex-col items-center justify-center text-center p-4 relative"
                         >
+                            {option.title === "Live Orders" && pendingOrders.length > 0 && (
+                                <Badge className="absolute top-2 right-2">{pendingOrders.length}</Badge>
+                            )}
                             <CardContent className="flex flex-col items-center justify-center p-0">
                                 <option.icon className={`h-12 w-12 mb-2 text-primary`} strokeWidth={1.5} />
                                 <CardTitle className="text-lg font-semibold">{option.title}</CardTitle>

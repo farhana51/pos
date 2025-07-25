@@ -1,9 +1,10 @@
 
+
 'use client'
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe, BarChart } from "lucide-react"
+import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe, BarChart, Radio } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,7 @@ const allMenuItems = [
   { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/collection", label: "Collection", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/live-orders", label: "Live Orders", icon: Radio, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/online-orders", label: "Online Orders", icon: Globe, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
@@ -63,7 +65,7 @@ export function AppSidebar() {
   const isActive = (path: string) => {
     if (path === '/landing') return pathname === path;
     // For dashboard and other root-level pages, we want an exact match.
-    if (['/dashboard', '/collection', '/delivery', '/online-orders', '/reservations', '/customers', '/team', '/inventory'].includes(path)) {
+    if (['/dashboard', '/collection', '/delivery', '/online-orders', '/reservations', '/customers', '/team', '/inventory', '/live-orders'].includes(path)) {
       return pathname === path
     }
     return pathname.startsWith(path)
