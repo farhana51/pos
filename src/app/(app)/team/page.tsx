@@ -16,11 +16,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamMemberDialog } from "./_components/TeamMemberDialog";
 
 
-const statusColors: Record<string, string> = {
-    Active: 'text-green-600 bg-green-100',
-    Inactive: 'text-red-600 bg-red-100',
-}
-
 const roleColors: Record<string, string> = {
     Admin: 'bg-primary/10 text-primary',
     Advanced: 'bg-accent/20 text-accent-foreground',
@@ -73,7 +68,6 @@ function TeamPage() {
                                     <TableHead>User ID</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -91,9 +85,6 @@ function TeamPage() {
                                         <TableCell>{member.email}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className={roleColors[member.role]}>{member.role}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={statusColors[member.status]}>{member.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>

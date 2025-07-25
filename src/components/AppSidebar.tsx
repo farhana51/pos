@@ -32,7 +32,7 @@ const allMenuItems = [
   { href: "/menu", label: "Menu", icon: BookOpen, requiredRoles: ['Admin', 'Advanced'] as UserRole[] },
   { href: "/reservations", label: "Reservations", icon: Calendar, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "reservations" },
   { href: "/customers", label: "Customers (CRM)", icon: Contact, requiredRoles: ['Admin', 'Advanced'] as UserRole[], setting: "crm" },
-  { href: "/team", label: "Team (HR)", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
+  { href: "/team", label: "Staff List", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[], setting: "inventory" },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },

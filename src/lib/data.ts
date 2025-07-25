@@ -3,9 +3,9 @@ import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, I
 // --- User Data ---
 // This is now the single source of truth for all users/team members.
 export let mockTeam: TeamMember[] = [
-    { id: 1, userId: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', email: 'alex@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 2, userId: 'user1', password: 'user1', name: 'Bob', role: 'Advanced', email: 'bob@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 3, userId: 'user', password: 'user', name: 'Charlie', role: 'Basic', email: 'charlie@example.com', status: 'Inactive', avatarUrl: 'https://placehold.co/100x100.png' }
+    { id: 1, userId: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', email: 'alex@example.com', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 2, userId: 'user1', password: 'user1', name: 'Bob', role: 'Advanced', email: 'bob@example.com', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 3, userId: 'user', password: 'user', name: 'Charlie', role: 'Basic', email: 'charlie@example.com', avatarUrl: 'https://placehold.co/100x100.png' }
 ];
 
 // --- Authentication and State Management (for demo purposes) ---
@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
 }
 
 export const findUserByCredentials = (id: string, pass: string): User | undefined => {
-    const foundMember = mockTeam.find(u => u.userId === id && u.password === pass && u.status === 'Active');
+    const foundMember = mockTeam.find(u => u.userId === id && u.password === pass);
     if (foundMember) {
         return {
             id: foundMember.id,
@@ -160,5 +160,3 @@ export const mockCustomers: Customer[] = [
     { id: 4, name: 'Mary Williams', email: 'mary.w@example.com', phone: '07777888999', totalOrders: 8, totalSpent: 410.20, lastVisit: '2024-08-12', loyaltyPoints: 41 },
     { id: 5, name: 'David Brown', email: 'd.brown@example.com', phone: '07111222333', totalOrders: 1, totalSpent: 45.80, lastVisit: '2024-06-05', loyaltyPoints: 4 },
 ]
-
-    

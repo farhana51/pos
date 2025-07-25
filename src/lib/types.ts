@@ -86,7 +86,6 @@ export interface TeamMember {
   name: string;
   role: UserRole;
   email: string;
-  status: 'Active' | 'Inactive';
   avatarUrl: string;
 }
 
