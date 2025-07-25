@@ -51,6 +51,11 @@ export default function AppLayout({
   // We use state to ensure the component re-renders when the user changes.
   const [user, setUser] = useState<User>(mockUser);
 
+   const handleLogout = () => {
+    logoutUser();
+    router.push('/login');
+  };
+
   useEffect(() => {
     const handleStorageChange = () => {
         const storedUser = localStorage.getItem('currentUser');
@@ -89,6 +94,14 @@ export default function AppLayout({
         <div className="flex flex-col h-screen">
             <AppHeader />
             <main className="flex-1 overflow-y-auto">{children}</main>
+             <Button
+                variant="destructive"
+                className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg"
+                onClick={handleLogout}
+            >
+                <LogOut className="h-6 w-6" />
+                <span className="sr-only">Logout</span>
+            </Button>
         </div>
     )
   }
