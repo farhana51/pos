@@ -434,8 +434,10 @@ function CancelOrderDialog({ orderId, onCancel }: { orderId: number, onCancel: (
 function OrderDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const orderId = parseInt(params.id, 10);
-  const [order, setOrder] = useState(getOrderById(orderId));
+  const [order, setOrder] = useState(() => {
+    const orderId = parseInt(params.id, 10);
+    return getOrderById(orderId);
+  });
   const hasAdvancedPermission = ['Admin', 'Advanced'].includes(mockUser.role);
 
   if (!order) {
