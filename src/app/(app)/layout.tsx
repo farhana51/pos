@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
@@ -118,7 +119,7 @@ export default function AppLayout({
                   {children}
               </div>
           </SidebarInset>
-      </SidebarProvider>
+    </SidebarProvider>
     )
   }
 
@@ -138,3 +139,5 @@ export default function AppLayout({
     </div>
   )
 }
+
+    

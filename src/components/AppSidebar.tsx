@@ -23,7 +23,7 @@ import { useEffect, useState } from "react"
 import { Button } from "./ui/button"
 
 const allMenuItems = [
-  { href: "/landing", label: "Home", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[] },
+  { href: "/landing", label: "Dashboard", icon: Home, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/dashboard", label: "Restaurant", icon: LayoutDashboard, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "restaurant" },
   { href: "/collection", label: "Collection", icon: Home, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "collection" },
   { href: "/delivery", label: "Delivery", icon: Car, requiredRoles: ['Admin', 'Advanced', 'Basic'] as UserRole[], setting: "delivery" },
@@ -108,8 +108,8 @@ export function AppSidebar() {
     if (!hasRolePermission) return false;
     
     // Check if the feature is enabled in settings
-    // @ts-ignore
-    if (item.setting && !appSettings[item.setting]) {
+    const settingKey = item.setting as keyof typeof appSettings;
+    if (item.setting && !appSettings[settingKey]) {
       return false;
     }
 
@@ -188,3 +188,5 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+
+    
