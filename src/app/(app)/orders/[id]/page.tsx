@@ -706,10 +706,12 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             mockOrders[orderIndex] = updatedOrder;
             setOrder(updatedOrder);
         }
-        toast({
-            title: "Order Updated",
-            description: "The order items and discount have been saved.",
-        });
+        if (currentUserRole === 'Admin') {
+            toast({
+                title: "Order Updated",
+                description: "The order items and discount have been saved.",
+            });
+        }
         router.push('/landing');
     }
     
