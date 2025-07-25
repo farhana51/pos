@@ -484,7 +484,6 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -663,12 +662,12 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             </Card>
         </div>
         <div className="md:col-span-2 space-y-6">
-          <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={() => {}} />
-           <Card>
+            <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={() => {}} />
+            <Card>
               <CardHeader>
                 <CardTitle>Modify Order</CardTitle>
                 <CardDescription>Add new items to this order.</CardDescription>
-              </Header>
+              </CardHeader>
               <CardContent>
                  <MenuGrid onSelectItem={handleSelectItem} />
               </CardContent>
