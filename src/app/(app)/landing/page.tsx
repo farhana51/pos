@@ -7,57 +7,69 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mockUser } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
-const serviceOptions = [
+const allServiceOptions = [
   {
     title: "Restaurant",
     icon: LayoutDashboard,
     href: "/dashboard",
+    roles: ['Admin', 'Advanced', 'Basic']
   },
   {
     title: "Take Away",
     icon: Home,
     href: "/collection",
+    roles: ['Admin', 'Advanced', 'Basic']
   },
   {
     title: "Delivery",
     icon: Car,
     href: "/delivery",
+    roles: ['Admin', 'Advanced', 'Basic']
   },
   {
     title: "Online Order",
     icon: Globe,
     href: "/online-orders",
+    roles: ['Admin', 'Advanced']
   },
   {
     title: "Reservation",
     icon: BarChart2,
     href: "/reservations",
+    roles: ['Admin', 'Advanced']
   },
    {
     title: "CRM",
     icon: Contact,
     href: "/customers",
+    roles: ['Admin', 'Advanced']
   },
   {
     title: "HR",
     icon: Users,
     href: "/team",
+    roles: ['Admin']
   },
   {
     title: "Inventory",
     icon: Package,
     href: "/inventory",
+    roles: ['Admin', 'Advanced']
   },
   {
     title: "Settings",
     icon: Settings,
     href: "/admin/settings",
+    roles: ['Admin']
   },
 ];
 
 export default function LandingPage() {
   const { toast } = useToast();
+  const serviceOptions = allServiceOptions.filter(option => option.roles.includes(mockUser.role));
+  const isBasicUser = mockUser.role === 'Basic';
 
   return (
     <div className="flex flex-col h-screen w-full bg-background">
@@ -68,8 +80,13 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-6xl">
-            <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-5">
+        <div className={cn("w-full", isBasicUser ? "max-w-4xl" : "max-w-6xl")}>
+            <div className={cn(
+                "grid gap-6",
+                 isBasicUser 
+                    ? "grid-cols-1 md:grid-cols-3" 
+                    : "md:grid-cols-3 lg:grid-cols-5"
+            )}>
                 {serviceOptions.map((option) => (
                    <Link key={option.title} href={option.href} passHref>
                         <Card
