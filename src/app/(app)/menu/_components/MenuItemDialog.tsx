@@ -19,7 +19,6 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number."),
   category: z.string().min(1, "Category is required."),
   subcategory: z.string().optional(),
-  vatRate: z.coerce.number().min(0, "VAT rate is required."),
 });
 
 type MenuItemFormValues = z.infer<typeof formSchema>;
@@ -40,7 +39,6 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
       price: 0,
       category: "Mains",
       subcategory: "",
-      vatRate: 20,
     },
   });
 
@@ -52,7 +50,6 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
         price: item.price,
         category: item.category,
         subcategory: item.subcategory,
-        vatRate: item.vatRate,
       });
     } else {
       form.reset({
@@ -61,7 +58,6 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
         price: 0,
         category: "Mains",
         subcategory: "",
-        vatRate: 20,
       });
     }
   }, [item, form, isOpen]);
@@ -109,8 +105,7 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
+            <FormField
                 control={form.control}
                 name="price"
                 render={({ field }) => (
@@ -123,28 +118,6 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="vatRate"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>VAT Rate (%)</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value.toString()}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select VAT rate" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="20">20% (Standard)</SelectItem>
-                                <SelectItem value="0">0% (Zero-rated)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
              <div className="grid grid-cols-2 gap-4">
                 <FormField
                 control={form.control}

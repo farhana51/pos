@@ -20,8 +20,7 @@ const calculateMetrics = () => {
         const orderTotal = order.items.reduce((sum, item) => {
             const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
             const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-            const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
-            return sum + itemTotal + vat;
+            return sum + itemTotal;
         }, 0);
         return acc + orderTotal;
     }, 0);
@@ -44,7 +43,7 @@ const getSalesByCategory = () => {
                 if (!categorySales[category]) {
                     categorySales[category] = 0;
                 }
-                categorySales[category] += itemTotal; // Calculating based on pre-VAT price
+                categorySales[category] += itemTotal;
             });
         }
     });
@@ -288,8 +287,7 @@ function ReportsPage() {
                             const total = order.items.reduce((sum, item) => {
                                 const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
                                 const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-                                const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
-                                return sum + itemTotal + vat;
+                                return sum + itemTotal;
                             }, 0);
                             return (
                                 <TableRow key={order.id}>

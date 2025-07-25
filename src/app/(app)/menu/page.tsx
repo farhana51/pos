@@ -22,7 +22,6 @@ function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuIt
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Price</TableHead>
-          <TableHead>VAT</TableHead>
           <TableHead>Add-ons</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -36,7 +35,6 @@ function MenuTable({ items, onEdit }: { items: MenuItem[], onEdit: (item: MenuIt
               {item.subcategory && <Badge variant="secondary" className="mt-1">{item.subcategory}</Badge>}
             </TableCell>
             <TableCell>£{item.price.toFixed(2)}</TableCell>
-            <TableCell><Badge variant="outline">{item.vatRate}%</Badge></TableCell>
             <TableCell>
               {item.addons?.map(addon => (
                 <div key={addon.id} className="text-xs text-muted-foreground">

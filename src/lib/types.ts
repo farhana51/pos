@@ -36,7 +36,6 @@ export interface MenuItem {
   category: string;
   subcategory?: string;
   addons?: Addon[];
-  vatRate: number;
 }
 
 export interface OrderItem {

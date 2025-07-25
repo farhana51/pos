@@ -3,7 +3,7 @@
 'use client'
 
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
-import React, { use } from 'react';
+import React from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -117,22 +117,13 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   );
 }
 
-function OrderItemsTable({ items, onUpdateItems, onCreateOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onCreateOrder: () => void }) {
+function OrderItemsTable({ items, onUpdateItems, onSendOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onSendOrder: () => void }) {
   const subtotal = items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
   }, 0);
 
-  const totalVat = items.reduce((sum, item) => {
-      const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-      const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-      if (item.menuItem.vatRate > 0) {
-          return sum + (itemTotal * (item.menuItem.vatRate / 100));
-      }
-      return sum;
-  }, 0);
-
-  const grandTotal = subtotal + totalVat;
+  const grandTotal = subtotal;
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
       const updatedItems = [...items];
@@ -197,16 +188,12 @@ function OrderItemsTable({ items, onUpdateItems, onCreateOrder }: { items: Order
                 <span>Subtotal</span>
                 <span>£{subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between w-full text-sm">
-                <span>VAT</span>
-                <span>£{totalVat.toFixed(2)}</span>
-            </div>
             <div className="flex justify-between w-full font-bold text-lg">
                 <span>Grand Total</span>
                 <span>£{grandTotal.toFixed(2)}</span>
             </div>
-            <Button onClick={onCreateOrder} disabled={items.length === 0} size="lg">
-                Create Order
+            <Button onClick={onSendOrder} disabled={items.length === 0} size="lg">
+                Send Order
             </Button>
         </CardFooter>
       )}
@@ -242,15 +229,7 @@ function BillSplittingDialog({ items }: { items: OrderItem[] }) {
             const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
             return sum + (item.menuItem.price + addonsTotal) * item.quantity;
         }, 0);
-        const vat = billItems.reduce((sum, item) => {
-             const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-            const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-            if (item.menuItem.vatRate > 0) {
-                return sum + (itemTotal * (item.menuItem.vatRate / 100));
-            }
-            return sum;
-        }, 0);
-        return subtotal + vat;
+        return subtotal;
     };
 
     return (
@@ -526,10 +505,10 @@ function NewOrderPage() {
         setItemToCustomize(null); // Close dialog
     };
 
-    const handleCreateOrder = () => {
+    const handleSendOrder = () => {
         // In a real app, this would be a server action to create the order
         const newOrderId = Math.floor(Math.random() * 1000) + 200; // Mock ID
-        console.log("Creating new order:", { ...order, id: newOrderId });
+        console.log("Sending new order:", { ...order, id: newOrderId });
         mockOrders.push({ ...order, id: newOrderId, status: 'Pending' });
         // Update table status
         const tableIndex = mockTables.findIndex(t => t.id === tableId);
@@ -558,7 +537,7 @@ function NewOrderPage() {
                     <MenuGrid onSelectItem={handleSelectItem} />
                 </div>
                 <div className="md:col-span-1 h-full">
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={handleCreateOrder} />
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleSendOrder} />
                 </div>
                  {itemToCustomize && (
                     <AddItemDialog
@@ -624,8 +603,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const grandTotal = order.items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-    const vat = item.menuItem.vatRate > 0 ? itemTotal * (item.menuItem.vatRate / 100) : 0;
-    return sum + itemTotal + vat;
+    return sum + itemTotal;
   }, 0);
 
 
@@ -662,7 +640,14 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
             </Card>
         </div>
         <div className="md:col-span-2 space-y-6">
-            <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onCreateOrder={() => {}} />
+            <Card>
+                 <CardHeader>
+                    <CardTitle>Order Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={() => {}} />
+                </CardContent>
+            </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Modify Order</CardTitle>
