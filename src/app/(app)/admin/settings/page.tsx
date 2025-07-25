@@ -31,14 +31,14 @@ function SettingsPage() {
         reservations: true,
         inventory: true,
         crm: false,
-        deliveryTracking: false,
+        deliveryTracking: true,
         suppliers: false,
         onlineOrdering: true,
         collection: true,
         deliveryChannel: false,
         customerDisplay: true,
         kitchenDisplay: false,
-        labelPrinter: false,
+        labelPrinter: true,
     });
 
     const [printerIps, setPrinterIps] = useState<string[]>(['192.168.1.101', '', '', '', '']);
