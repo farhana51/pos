@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Basic' | 'Advanced' | 'Admin';
 
 export interface User {
@@ -110,12 +111,15 @@ export interface TeamMember {
   avatarUrl: string;
 }
 
+export type InventoryItemUnit = 'g' | 'kg' | 'ml' | 'liters' | 'pcs' | 'bottles';
+
 export interface InventoryItem {
     id: number;
     name: string;
     stock: number;
-    unit: 'kg' | 'g' | 'liters' | 'ml' | 'pcs' | 'bottles';
+    unit: InventoryItemUnit;
     lowThreshold: number;
+    idealThreshold: number;
 }
 
 export interface Customer {

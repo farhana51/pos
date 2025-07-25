@@ -1,4 +1,5 @@
 
+
 import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer, SetMenu, MenuCategory } from './types';
 
 // --- User Data ---
@@ -83,19 +84,19 @@ export const hasPermission = (userRole: UserRole, requiredRoles: UserRole[]): bo
 // --- Mock Data ---
 
 export const mockInventory: InventoryItem[] = [
-    { id: 1, name: 'Arborio Rice', stock: 20, unit: 'kg', lowThreshold: 5 },
-    { id: 2, name: 'Black Truffle', stock: 2, unit: 'kg', lowThreshold: 0.5 },
-    { id: 3, name: 'Parmesan Cheese', stock: 10, unit: 'kg', lowThreshold: 2 },
-    { id: 4, name: 'Scallops', stock: 15, unit: 'kg', lowThreshold: 5 },
-    { id: 5, name: 'Butternut Squash', stock: 8, unit: 'pcs', lowThreshold: 3 },
-    { id: 6, name: 'Pancetta', stock: 5, unit: 'kg', lowThreshold: 2 },
-    { id: 7, name: 'Burrata', stock: 30, unit: 'pcs', lowThreshold: 10 },
-    { id: 8, name: 'Heirloom Tomatoes', stock: 12, unit: 'kg', lowThreshold: 4 },
-    { id: 9, name: 'Pizza Dough', stock: 50, unit: 'pcs', lowThreshold: 20 },
-    { id: 10, name: 'Flour', stock: 25, unit: 'kg', lowThreshold: 10 },
-    { id: 11, name: 'Chocolate', stock: 15, unit: 'kg', lowThreshold: 5 },
-    { id: 12, name: 'Whiskey', stock: 10, unit: 'bottles', lowThreshold: 3 },
-    { id: 13, name: 'Potatoes', stock: 40, unit: 'kg', lowThreshold: 15 },
+    { id: 1, name: 'Arborio Rice', stock: 20, unit: 'kg', lowThreshold: 5, idealThreshold: 15 },
+    { id: 2, name: 'Black Truffle', stock: 2, unit: 'kg', lowThreshold: 0.5, idealThreshold: 1.5 },
+    { id: 3, name: 'Parmesan Cheese', stock: 10, unit: 'kg', lowThreshold: 2, idealThreshold: 8 },
+    { id: 4, name: 'Scallops', stock: 15, unit: 'kg', lowThreshold: 5, idealThreshold: 10 },
+    { id: 5, name: 'Butternut Squash', stock: 8, unit: 'pcs', lowThreshold: 3, idealThreshold: 10 },
+    { id: 6, name: 'Pancetta', stock: 5, unit: 'kg', lowThreshold: 2, idealThreshold: 4 },
+    { id: 7, name: 'Burrata', stock: 30, unit: 'pcs', lowThreshold: 10, idealThreshold: 25 },
+    { id: 8, name: 'Heirloom Tomatoes', stock: 12, unit: 'kg', lowThreshold: 4, idealThreshold: 10 },
+    { id: 9, name: 'Pizza Dough', stock: 50, unit: 'pcs', lowThreshold: 20, idealThreshold: 40 },
+    { id: 10, name: 'Flour', stock: 25, unit: 'kg', lowThreshold: 10, idealThreshold: 20 },
+    { id: 11, name: 'Chocolate', stock: 15, unit: 'kg', lowThreshold: 5, idealThreshold: 10 },
+    { id: 12, name: 'Whiskey', stock: 10, unit: 'bottles', lowThreshold: 3, idealThreshold: 8 },
+    { id: 13, name: 'Potatoes', stock: 40, unit: 'kg', lowThreshold: 15, idealThreshold: 30 },
 ]
 
 
