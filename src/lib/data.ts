@@ -103,9 +103,9 @@ export const mockInventory: InventoryItem[] = [
 export const mockTables: Table[] = [
   { id: 1, capacity: 4, status: 'Available', x: 100, y: 50, width: 20, height: 20, floor: 'Main Floor' },
   { id: 2, capacity: 4, status: 'Available', x: 250, y: 50, width: 20, height: 20, floor: 'Main Floor' },
-  { id: 3, capacity: 6, status: 'Available', x: 400, y: 50, width: 32, height: 20, floor: 'Main Floor' },
+  { id: 3, capacity: 6, status: 'Occupied', orderId: 101, x: 400, y: 50, width: 32, height: 20, floor: 'Main Floor' },
   { id: 4, capacity: 4, status: 'Available', x: 100, y: 200, width: 20, height: 20, floor: 'Main Floor' },
-  { id: 5, capacity: 4, status: 'Available', x: 250, y: 200, width: 20, height: 20, floor: 'Main Floor' },
+  { id: 5, capacity: 4, status: 'Occupied', orderId: 104, x: 250, y: 200, width: 20, height: 20, floor: 'Main Floor' },
   { id: 6, capacity: 8, status: 'Available', x: 400, y: 200, width: 32, height: 20, floor: 'Main Floor' },
   { id: 7, capacity: 4, status: 'Available', x: 100, y: 350, width: 20, height: 20, floor: 'Main Floor' },
   { id: 8, capacity: 4, status: 'Available', x: 250, y: 350, width: 20, height: 20, floor: 'Main Floor' },
@@ -167,7 +167,84 @@ export const mockSetMenus: SetMenu[] = [
     }
 ];
 
-export const mockOrders: Order[] = [];
+export const mockOrders: Order[] = [
+    {
+        id: 101,
+        tableId: 3,
+        type: 'Table',
+        status: 'Paid',
+        createdAt: '2024-08-15T19:05:00.000Z',
+        guests: 4,
+        paymentMethod: 'Card',
+        discount: 10,
+        items: [
+            { menuItem: mockMenu[0], quantity: 2, selectedAddons: [mockMenu[0].addons![0]] }, // 2x Truffle Risotto with Chicken
+            { menuItem: mockMenu[2], quantity: 1 }, // 1x Burrata Caprese
+            { menuItem: mockMenu[5], quantity: 4 }, // 4x Old Fashioned
+        ],
+        payments: [{ amount: 93.00, method: 'Card', date: '2024-08-15T19:25:00.000Z' }]
+    },
+    {
+        id: 102,
+        tableId: 0,
+        type: 'Collection',
+        status: 'Paid',
+        customerName: 'Jane Smith',
+        createdAt: '2024-08-15T20:15:00.000Z',
+        paymentMethod: 'Cash',
+        items: [
+            { menuItem: mockMenu[3], quantity: 2 }, // 2x Margherita Pizza
+            { menuItem: mockMenu[7], quantity: 1 }, // 1x Fries
+        ],
+        payments: [{ amount: 34.00, method: 'Cash', date: '2024-08-15T20:25:00.000Z'}]
+    },
+    {
+        id: 103,
+        tableId: 0,
+        type: 'Delivery',
+        status: 'Pending',
+        customerName: 'Peter Jones',
+        customerAddress: '123 Fake Street, Anytown, AT1 2BC',
+        createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
+        items: [
+            { menuItem: mockMenu[1], quantity: 1 }, // 1x Seared Scallops
+        ]
+    },
+    {
+        id: 104,
+        tableId: 5,
+        type: 'Table',
+        status: 'Pending',
+        createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+        guests: 2,
+        items: [
+            { menuItem: mockMenu[6], quantity: 2 }, // 2x Sparkling Water
+        ]
+    },
+     {
+        id: 105,
+        tableId: 0,
+        type: 'Collection',
+        status: 'Pending',
+        customerName: 'Alice Wonderland',
+        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        items: [
+            { menuItem: mockMenu[4], quantity: 1 }, // 1x Choc lava cake
+            { menuItem: mockMenu[6], quantity: 1 }, // 1x Sparkling Water
+        ]
+    },
+    {
+        id: 106,
+        tableId: 1,
+        type: 'Table',
+        status: 'Cancelled',
+        createdAt: '2024-08-14T12:00:00.000Z',
+        guests: 2,
+        items: [
+            { menuItem: mockMenu[0], quantity: 1 }
+        ]
+    }
+];
 
 export let mockReservations: Reservation[] = [
   { id: 1, customerName: 'John Doe', phone: '07123456789', partySize: 4, time: '2024-08-15T19:00:00.000Z', status: 'Confirmed' },
