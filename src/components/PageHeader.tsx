@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ThemeToggle } from "./ThemeToggle"
 
 type PageHeaderProps = {
   title: string
@@ -15,6 +16,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
       </div>
      
       <div className="ml-auto flex items-center gap-4">
+        <ThemeToggle />
         {children}
       </div>
     </header>
