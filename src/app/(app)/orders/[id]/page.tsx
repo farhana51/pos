@@ -1,17 +1,15 @@
 
 
-
-
 'use client'
 
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
 import React from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, setUserRole, mockUser } from '@/lib/data';
-import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order } from '@/lib/types';
+import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order, PaymentMethod } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart } from 'lucide-react';
@@ -350,6 +348,12 @@ function PaymentDialog({ order }: { order: Order }) {
     const { toast } = useToast();
     const router = useRouter();
 
+    const grandTotal = order.items.reduce((sum, item) => {
+        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+        return sum + itemTotal;
+    }, 0);
+
     const handlePayment = () => {
         if (paymentMethod) {
             // Update order status
@@ -373,12 +377,6 @@ function PaymentDialog({ order }: { order: Order }) {
             router.push('/dashboard');
         }
     }
-    
-    const grandTotal = order.items.reduce((sum, item) => {
-        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-        return sum + itemTotal;
-    }, 0);
 
 
     const paymentOptions = [
