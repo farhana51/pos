@@ -31,13 +31,13 @@ function NewDeliveryOrderPage() {
     const handleFindAddress = async () => {
         if(!postCode) return;
         try {
-            // Use the /postcodes endpoint to get a list of addresses for a full postcode
-            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}`);
+            // Use a public API to get a list of addresses for a full postcode
+            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}/addresses`);
             const data = await response.json();
             
-            if (data.status === 200 && data.result && Array.isArray(data.result.addresses)) {
+            if (data.status === 200 && data.result && Array.isArray(data.result)) {
                  // The result contains a list of detailed address objects. We format them for display.
-                 const formattedAddresses = data.result.addresses.map((addr: any) => addr.formatted_address.replace(/, ,/g, ',').split(',').slice(0, 2).join(', '));
+                 const formattedAddresses = data.result.map((addr: any) => addr.formatted_address.replace(/, ,/g, ',').split(',').slice(0, 2).join(', '));
                  setFoundAddresses(formattedAddresses);
                  setIsAddressPopoverOpen(true);
             } else {
