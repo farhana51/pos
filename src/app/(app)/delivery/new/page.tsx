@@ -32,10 +32,10 @@ function NewDeliveryOrderPage() {
         if(!postCode) return;
         try {
             // Use the /addresses endpoint to get a list of addresses for a full postcode
-            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}/addresses`);
+            const response = await fetch(`https://api.postcodes.io/postcodes/${postCode.replace(/\s/g, '')}`);
             const data = await response.json();
             
-            if (data.status === 200 && data.result.addresses.length > 0) {
+            if (data.status === 200 && data.result && Array.isArray(data.result.addresses)) {
                  // The result contains a list of detailed address objects. We format them for display.
                  const formattedAddresses = data.result.addresses.map((addr: any) => addr.formatted_address.replace(/, ,/g, ',').split(',').slice(0, 2).join(', '));
                  setFoundAddresses(formattedAddresses);
@@ -57,7 +57,7 @@ function NewDeliveryOrderPage() {
 
         // Simple logic to separate house number/name from road
         const roadParts = line1.split(' ');
-        if (roadParts.length > 1) {
+        if (roadParts.length > 1 && !isNaN(parseInt(roadParts[0]))) { // check if first part is a number
             setHouseNumber(roadParts[0]);
             setRoadName(roadParts.slice(1).join(' '));
         } else {
@@ -158,7 +158,7 @@ function NewDeliveryOrderPage() {
                                     </PopoverTrigger>
                                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                         {foundAddresses.length > 0 ? (
-                                            <ul className="space-y-1 py-1">
+                                            <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
                                                 {foundAddresses.map(addr => (
                                                     <li 
                                                         key={addr} 
