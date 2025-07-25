@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 
 const getOrderById = (id: number): Order | undefined => {
@@ -304,9 +305,26 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
 
     const handleTransfer = () => {
         if (targetTableId) {
-            // In a real app, this would be a server action
-            console.log(`Transferring Order ${orderId} from Table ${currentTableId} to Table ${targetTableId}`);
-            // Simulate navigation or data refresh
+            // Find original table and set to available
+            const oldTableIndex = mockTables.findIndex(t => t.id === currentTableId);
+            if (oldTableIndex !== -1) {
+                mockTables[oldTableIndex].status = 'Available';
+                delete mockTables[oldTableIndex].orderId;
+            }
+
+            // Find new table and set to occupied
+            const newTableIndex = mockTables.findIndex(t => t.id === targetTableId);
+            if (newTableIndex !== -1) {
+                mockTables[newTableIndex].status = 'Occupied';
+                mockTables[newTableIndex].orderId = orderId;
+            }
+
+            // Update the order with the new tableId
+            const orderIndex = mockOrders.findIndex(o => o.id === orderId);
+            if (orderIndex !== -1) {
+                mockOrders[orderIndex].tableId = targetTableId;
+            }
+
             router.push(`/dashboard`);
         }
     };
@@ -521,7 +539,6 @@ function NewOrderPage() {
     const handleSendOrder = () => {
         // In a real app, this would be a server action to create the order
         const newOrderId = Math.floor(Math.random() * 1000) + 200; // Mock ID
-        console.log("Sending new order:", { ...order, id: newOrderId });
         mockOrders.push({ ...order, id: newOrderId, status: 'Pending' });
         // Update table status
         const tableIndex = mockTables.findIndex(t => t.id === tableId);
@@ -566,14 +583,13 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
   const [discountSettings, setDiscountSettings] = useState({ enabled: true, type: 'amount' as 'percentage' | 'amount' });
   const [appliedDiscount, setAppliedDiscount] = useState(initialOrder.discount || 0);
   const [customDiscount, setCustomDiscount] = useState<number | string>('');
-
-  const canApplyDiscount = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -587,6 +603,8 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         }
     }
   }, []);
+  
+  const canApplyDiscount = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
 
   const handleUpdateItems = (newItems: OrderItem[]) => {
       setOrder(prev => ({...prev, items: newItems}));
