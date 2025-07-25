@@ -24,7 +24,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 
 
 const getOrderById = (id: number): Order | undefined => {
@@ -477,7 +476,6 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -531,7 +529,7 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
-        router.push(`/landing`);
+        router.push(`/dashboard`);
     }
 
     const handleSelectItem = (item: MenuItem) => {
@@ -571,7 +569,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
-  const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage' });
+  const [discountSettings, setDiscountSettings] = useState({ enabled: true, type: 'amount' as 'percentage' | 'amount' });
   const [appliedDiscount, setAppliedDiscount] = useState(initialOrder.discount || 0);
   const [customDiscount, setCustomDiscount] = useState<number | string>('');
 
@@ -656,7 +654,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         if (orderIndex > -1) {
             mockOrders[orderIndex] = order;
         }
-        router.push('/landing');
+        router.push(`/dashboard`);
     }
 
   const handleSuccessfulPayment = (paymentMethod: PaymentMethod, discountApplied: number) => {
