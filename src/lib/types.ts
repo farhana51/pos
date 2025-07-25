@@ -1,3 +1,4 @@
+
 export type UserRole = 'Basic' | 'Advanced' | 'Admin';
 
 export interface User {
@@ -91,9 +92,11 @@ export interface Order {
 export interface Reservation {
   id: number;
   customerName: string;
+  phone: string;
+  email?: string;
   partySize: number;
   time: string;
-  status: 'Confirmed' | 'Pending' | 'Cancelled';
+  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Seated';
   notes?: string;
 }
 

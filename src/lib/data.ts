@@ -1,3 +1,4 @@
+
 import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer, SetMenu, MenuCategory } from './types';
 
 // --- User Data ---
@@ -167,11 +168,12 @@ export const mockSetMenus: SetMenu[] = [
 
 export const mockOrders: Order[] = [];
 
-export const mockReservations: Reservation[] = [
-  { id: 1, customerName: 'John Doe', partySize: 4, time: '2024-08-15T19:00', status: 'Confirmed' },
-  { id: 2, customerName: 'Jane Smith', partySize: 2, time: '2024-08-15T19:30', status: 'Confirmed', notes: 'Anniversary' },
-  { id: 3, customerName: 'Peter Jones', partySize: 6, time: '2024-08-15T20:00', status: 'Pending' },
-  { id: 4, customerName: 'Mary Williams', partySize: 3, time: '2024-08-16T18:00', status: 'Confirmed' },
+export let mockReservations: Reservation[] = [
+  { id: 1, customerName: 'John Doe', phone: '07123456789', partySize: 4, time: '2024-08-15T19:00:00.000Z', status: 'Confirmed' },
+  { id: 2, customerName: 'Jane Smith', phone: '07987654321', partySize: 2, time: '2024-08-15T19:30:00.000Z', status: 'Confirmed', notes: 'Anniversary' },
+  { id: 3, customerName: 'Peter Jones', phone: '07555123456', partySize: 6, time: '2024-08-15T20:00:00.000Z', status: 'Pending' },
+  { id: 4, customerName: 'Mary Williams', phone: '07777888999', partySize: 3, time: '2024-08-16T18:00:00.000Z', status: 'Seated' },
+  { id: 5, customerName: 'David Brown', phone: '07111222333', partySize: 5, time: '2024-08-16T20:30:00.000Z', status: 'Cancelled' },
 ];
 
 export const getOrderByTableId = (orderId: number): Order | undefined => {
