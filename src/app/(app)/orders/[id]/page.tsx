@@ -348,14 +348,20 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
     const [appliedDiscount, setAppliedDiscount] = useState(0);
     const [customDiscount, setCustomDiscount] = useState<number | string>('');
 
-    const canApplyDiscount = ['Admin', 'Advanced'].includes(mockUser.role);
-
+    // State to hold the current user role, ensuring it's up-to-date
+    const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+    const canApplyDiscount = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
 
     useEffect(() => {
         if(typeof window !== 'undefined'){
             const savedSettings = localStorage.getItem('discountSettings');
             if (savedSettings) {
                 setDiscountSettings(JSON.parse(savedSettings));
+            }
+            // Get user from localStorage to ensure we have the correct role
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                setCurrentUserRole(JSON.parse(storedUser).role);
             }
         }
     }, []);
@@ -613,9 +619,19 @@ function NewOrderPage() {
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
   const [order, setOrder] = useState<Order>(initialOrder);
-  const hasAdvancedPermission = ['Admin', 'Advanced'].includes(mockUser.role);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const hasAdvancedPermission = currentUserRole && ['Admin', 'Advanced'].includes(currentUserRole);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
   
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            setCurrentUserRole(JSON.parse(storedUser).role);
+        }
+    }
+  }, []);
+
   const handleUpdateItems = (newItems: OrderItem[]) => {
       setOrder(prev => ({...prev, items: newItems}));
   }
