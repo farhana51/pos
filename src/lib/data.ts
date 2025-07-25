@@ -133,7 +133,7 @@ export const mockOrders: Order[] = [
     id: 101, 
     tableId: 1, 
     type: 'Table',
-    status: 'Paid',
+    status: 'Pending',
     paymentMethod: 'Card',
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     items: [
@@ -145,7 +145,7 @@ export const mockOrders: Order[] = [
     id: 102,
     tableId: 7,
     type: 'Table',
-    status: 'Paid',
+    status: 'Pending',
     paymentMethod: 'Cash',
     createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     items: [
@@ -157,7 +157,7 @@ export const mockOrders: Order[] = [
     id: 103,
     tableId: 12,
     type: 'Table',
-    status: 'Paid',
+    status: 'Pending',
     paymentMethod: 'Card',
     createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     items: [
@@ -200,10 +200,9 @@ export const mockReservations: Reservation[] = [
   { id: 4, customerName: 'Mary Williams', partySize: 3, time: '2024-08-16T18:00', status: 'Confirmed' },
 ];
 
-export const getOrderByTableId = (tableId: number): Order | undefined => {
-  const table = mockTables.find(t => t.id === tableId);
-  if (!table || !table.orderId) return undefined;
-  return mockOrders.find(o => o.id === table.orderId);
+export const getOrderByTableId = (orderId: number): Order | undefined => {
+  if (!orderId) return undefined;
+  return mockOrders.find(o => o.id === orderId);
 };
 
 export const mockCustomers: Customer[] = [
@@ -213,3 +212,5 @@ export const mockCustomers: Customer[] = [
     { id: 4, name: 'Mary Williams', email: 'mary.w@example.com', phone: '07777888999', totalOrders: 8, totalSpent: 410.20, lastVisit: '2024-08-12', loyaltyPoints: 41 },
     { id: 5, name: 'David Brown', email: 'd.brown@example.com', phone: '07111222333', totalOrders: 1, totalSpent: 45.80, lastVisit: '2024-06-05', loyaltyPoints: 4 },
 ]
+
+    

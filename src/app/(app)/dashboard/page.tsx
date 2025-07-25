@@ -96,16 +96,7 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
         return sum + (item.menuItem.price + addonsTotal) * item.quantity;
     }, 0) ?? 0;
 
-    const totalVat = order?.items.reduce((sum, item) => {
-        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
-        if (item.menuItem.vatRate > 0) {
-            return sum + (itemTotal * (item.menuItem.vatRate / 100));
-        }
-        return sum;
-    }, 0) ?? 0;
-
-    const grandTotal = subtotal + totalVat;
+    const grandTotal = subtotal;
 
     return (
         <Card className="h-full flex flex-col">
@@ -137,10 +128,6 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
                                 <span>Subtotal</span>
                                 <span>£{subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span>VAT</span>
-                                <span>£{totalVat.toFixed(2)}</span>
-                            </div>
                             <div className="flex justify-between font-bold text-base">
                                 <span>Total</span>
                                 <span>£{grandTotal.toFixed(2)}</span>
@@ -156,8 +143,8 @@ function OrderPanel({ selectedTable }: { selectedTable: Table | null }) {
                 )}
             </CardContent>
              <div className="p-6 pt-0">
-                <Button className="w-full" asChild disabled={!selectedTable || selectedTable.status !== 'Occupied'}>
-                   <Link href={order ? `/orders/${order.id}` : '#'}>
+                <Button className="w-full" asChild disabled={!selectedTable}>
+                   <Link href={selectedTable?.status === 'Occupied' && order ? `/orders/${order.id}` : (selectedTable?.status === 'Available' ? `/orders/new?tableId=${selectedTable.id}` : '#')}>
                      {order ? 'View / Edit Order' : 'Create New Order'}
                    </Link>
                 </Button>
@@ -233,6 +220,20 @@ export default function DashboardPage() {
 
   const floors = [...new Set(initialMockTables.map(t => t.floor))];
 
+  const handleTableClick = (tableId: number) => {
+    const table = tables.find(t => t.id === tableId);
+    if (!table) return;
+
+    setSelectedTableId(tableId);
+
+    if (table.status === 'Available') {
+      setTableForGuestInput(table);
+    } else if (table.status === 'Occupied') {
+      router.push(`/orders/${table.orderId}`);
+    }
+    // For other statuses like 'Reserved' or 'Dirty', just select them to show info.
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
     e.preventDefault();
     const table = tables.find(t => t.id === tableId);
@@ -279,6 +280,12 @@ export default function DashboardPage() {
   };
 
   const handleMouseUp = () => {
+    if (draggingTable.current) {
+        const table = tables.find(t => t.id === draggingTable.current!.id);
+        if (table && table.status === 'Occupied') {
+            router.push(`/orders/${table.orderId}`);
+        }
+    }
     draggingTable.current = null;
     window.removeEventListener('mousemove', handleMouseMove);
     window.removeEventListener('mouseup', handleMouseUp);
@@ -340,7 +347,10 @@ export default function DashboardPage() {
                                             key={table.id} 
                                             table={table} 
                                             isSelected={selectedTableId === table.id}
-                                            onMouseDown={handleMouseDown}
+                                            onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                handleMouseDown(e, table.id);
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -361,5 +371,7 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
 
     

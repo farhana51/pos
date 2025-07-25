@@ -1,5 +1,6 @@
 
 
+
 'use client'
 
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
@@ -13,7 +14,7 @@ import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order } 
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -117,7 +118,7 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   );
 }
 
-function OrderItemsTable({ items, onUpdateItems, onSendOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onSendOrder: () => void }) {
+function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder }: { items: OrderItem[], onUpdateItems: (items: OrderItem[]) => void, onSendOrder: () => void, isExistingOrder?: boolean }) {
   const subtotal = items.reduce((sum, item) => {
     const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
     return sum + (item.menuItem.price + addonsTotal) * item.quantity;
@@ -193,7 +194,7 @@ function OrderItemsTable({ items, onUpdateItems, onSendOrder }: { items: OrderIt
                 <span>£{grandTotal.toFixed(2)}</span>
             </div>
             <Button onClick={onSendOrder} disabled={items.length === 0} size="lg">
-                Send Order
+                {isExistingOrder ? 'Update Order' : 'Send Order'}
             </Button>
         </CardFooter>
       )}
@@ -463,7 +464,6 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -517,11 +517,7 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
-        toast({
-            title: "Order Sent to Kitchen",
-            description: `Order #${newOrderId} has been sent for preparation.`
-        })
-        router.push('/landing');
+        router.push(`/landing`);
     }
 
     const handleSelectItem = (item: MenuItem) => {
@@ -610,6 +606,19 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
     return sum + itemTotal;
   }, 0);
 
+  const handleUpdateOrder = () => {
+        // In a real app, this would be a server action to update the order
+        console.log("Updating order:", order);
+        const orderIndex = mockOrders.findIndex(o => o.id === order.id);
+        if (orderIndex > -1) {
+            mockOrders[orderIndex] = order;
+        }
+        toast({
+            title: "Order Updated",
+            description: `Order #${order.id} has been sent to the kitchen.`
+        })
+        router.push('/landing');
+    }
 
   return (
     <>
@@ -617,21 +626,14 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
         <PaymentDialog total={grandTotal} />
       </PageHeader>
-      <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Order Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>Table:</span><span className="font-medium">{order.tableId}</span></div>
-                {order.guests && <div className="flex justify-between"><span>Guests:</span><span className="font-medium">{order.guests}</span></div>}
-                <div className="flex justify-between"><span>Type:</span><Badge variant="secondary">{order.type}</Badge></div>
-                <div className="flex justify-between"><span>Time:</span><span className="font-medium">{format(new Date(order.createdAt), 'HH:mm')}</span></div>
-                <div className="flex justify-between"><span>Date:</span><span className="font-medium">{format(new Date(order.createdAt), 'dd/MM/yyyy')}</span></div>
-                </CardContent>
-            </Card>
-            
+      <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
+        <div className="md:col-span-2 h-full">
+            <MenuGrid onSelectItem={handleSelectItem} />
+        </div>
+        <div className="md:col-span-1 h-full flex flex-col gap-8">
+            <div className="flex-1">
+                <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={handleUpdateOrder} isExistingOrder={true}/>
+            </div>
             <Card>
                 <CardHeader>
                 <CardTitle>Actions</CardTitle>
@@ -641,25 +643,6 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
                     {hasAdvancedPermission && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
                     {hasAdvancedPermission && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
                 </CardContent>
-            </Card>
-        </div>
-        <div className="md:col-span-2 space-y-6">
-            <Card>
-                 <CardHeader>
-                    <CardTitle>Order Items</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <OrderItemsTable items={order.items} onUpdateItems={handleUpdateItems} onSendOrder={() => toast({ title: "Order Sent to Kitchen" })} />
-                </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Modify Order</CardTitle>
-                <CardDescription>Add new items to this order.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                 <MenuGrid onSelectItem={handleSelectItem} />
-              </CardContent>
             </Card>
         </div>
         
@@ -696,3 +679,5 @@ function OrderDetailsPage() {
 
 // Wrapping with withAuth HOC and specifying required roles
 export default withAuth(OrderDetailsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+
+    
