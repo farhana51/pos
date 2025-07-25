@@ -19,12 +19,12 @@ export default function LoginPage() {
     const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        // Set the initial time on the client
+        // Set the initial time on the client to avoid hydration mismatch
         setCurrentDateTime(new Date());
         
         const timer = setInterval(() => {
             setCurrentDateTime(new Date());
-        }, 1000);
+        }, 1000 * 60); // Update every minute is enough since seconds are not displayed
         return () => clearInterval(timer);
     }, []);
 
@@ -105,12 +105,12 @@ export default function LoginPage() {
           {currentDateTime ? (
             <>
                 <p className="text-xl mt-4 font-medium">{currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                <p className="text-4xl font-mono mt-2">{currentDateTime.toLocaleTimeString()}</p>
+                <p className="text-4xl font-mono mt-2">{currentDateTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</p>
             </>
           ) : (
             <>
-                 <p className="text-xl mt-4 font-medium h-6"></p>
-                 <p className="text-4xl font-mono mt-2 h-10"></p>
+                 <div className="text-xl mt-4 font-medium h-7 bg-muted-foreground/20 w-64 rounded animate-pulse"></div>
+                 <div className="text-4xl font-mono mt-2 h-10 bg-muted-foreground/20 w-40 rounded animate-pulse"></div>
             </>
           )}
 
