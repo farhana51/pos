@@ -16,9 +16,12 @@ export default function LoginPage() {
     const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [currentDateTime, setCurrentDateTime] = useState(new Date());
+    const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        // Set the initial time on the client
+        setCurrentDateTime(new Date());
+        
         const timer = setInterval(() => {
             setCurrentDateTime(new Date());
         }, 1000);
@@ -99,8 +102,18 @@ export default function LoginPage() {
       </div>
       <div className="flex-1 bg-secondary hidden md:flex flex-col items-center justify-center text-muted-foreground p-4">
           <h1 className="text-6xl font-bold">Welcome Tikka</h1>
-          <p className="text-xl mt-4 font-medium">{currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <p className="text-4xl font-mono mt-2">{currentDateTime.toLocaleTimeString()}</p>
+          {currentDateTime ? (
+            <>
+                <p className="text-xl mt-4 font-medium">{currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-4xl font-mono mt-2">{currentDateTime.toLocaleTimeString()}</p>
+            </>
+          ) : (
+            <>
+                 <p className="text-xl mt-4 font-medium h-6"></p>
+                 <p className="text-4xl font-mono mt-2 h-10"></p>
+            </>
+          )}
+
       </div>
     </main>
   );
