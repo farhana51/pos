@@ -11,25 +11,36 @@ import { mockOrders, mockMenu } from '@/lib/data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, HandCoins, Tag, TrendingUp, Utensils, Wallet } from 'lucide-react';
+import { CreditCard, HandCoins, Landmark, Tag, TrendingUp, Utensils, Wallet, Percent } from 'lucide-react';
 import React from 'react';
 
+const VAT_RATE = 0.20; // 20% Standard UK VAT Rate
+
 const calculateMetrics = () => {
-    const totalRevenue = mockOrders.reduce((acc, order) => {
-        if (order.status === 'Cancelled') return acc;
-        const orderTotal = order.items.reduce((sum, item) => {
+    let totalGrossRevenue = 0;
+    let totalVat = 0;
+
+    const paidOrders = mockOrders.filter(o => o.status === 'Paid');
+
+    paidOrders.forEach(order => {
+        const orderGrossTotal = order.items.reduce((sum, item) => {
             const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
             const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
             return sum + itemTotal;
-        }, 0);
-        return acc + orderTotal;
-    }, 0);
+        }, 0) - (order.discount || 0);
+        
+        totalGrossRevenue += orderGrossTotal;
+        
+        // Calculate VAT from the gross total. Formula: VAT = Gross * (VAT_RATE / (1 + VAT_RATE))
+        const orderVat = orderGrossTotal * (VAT_RATE / (1 + VAT_RATE));
+        totalVat += orderVat;
+    });
 
-    const paidOrders = mockOrders.filter(o => o.status === 'Paid');
+    const totalNetRevenue = totalGrossRevenue - totalVat;
     const totalOrders = paidOrders.length;
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const averageOrderValue = totalOrders > 0 ? totalGrossRevenue / totalOrders : 0;
 
-    return { totalRevenue, totalOrders, averageOrderValue };
+    return { totalGrossRevenue, totalNetRevenue, totalVat, totalOrders, averageOrderValue };
 };
 
 const getSalesByCategory = () => {
@@ -43,7 +54,7 @@ const getSalesByCategory = () => {
                 if (!categorySales[category]) {
                     categorySales[category] = 0;
                 }
-                categorySales[category] += itemTotal;
+                categorySales[category] += itemTotal / (1 + VAT_RATE); // Report Net sales
             });
         }
     });
@@ -73,17 +84,17 @@ const getWeeklyRevenue = () => {
       { date: 'Fri', revenue: 4800 },
       { date: 'Sat', revenue: 3800 },
       { date: 'Sun', revenue: 4300 },
-    ];
+    ].map(d => ({ ...d, revenue: d.revenue / (1 + VAT_RATE)})); // Show Net Revenue
 }
 
 
 const chartConfig = {
   sales: {
-    label: "Sales",
+    label: "Net Sales",
     color: "hsl(var(--chart-1))",
   },
   revenue: {
-    label: "Revenue",
+    label: "Net Revenue",
     color: "hsl(var(--chart-2))",
   },
   card: {
@@ -152,7 +163,7 @@ const ActiveShape = (props: any) => {
 
 
 function ReportsPage() {
-    const { totalRevenue, totalOrders, averageOrderValue } = calculateMetrics();
+    const { totalGrossRevenue, totalNetRevenue, totalVat, totalOrders, averageOrderValue } = calculateMetrics();
     const salesData = getSalesByCategory();
     const revenueData = getWeeklyRevenue();
     const paymentData = getPaymentMethodDistribution();
@@ -165,15 +176,35 @@ function ReportsPage() {
     <>
       <PageHeader title="Reports & Analytics" />
       <main className="p-4 sm:p-6 lg:p-8 space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                    <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
                     <Wallet className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">£{totalRevenue.toFixed(2)}</div>
-                    <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                    <div className="text-2xl font-bold">£{totalGrossRevenue.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total takings (inc. VAT)</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Net Revenue</CardTitle>
+                    <Landmark className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">£{totalNetRevenue.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Revenue before tax</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total VAT</CardTitle>
+                    <Percent className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">£{totalVat.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">VAT to be remitted (at {(VAT_RATE * 100).toFixed(0)}%)</p>
                 </CardContent>
             </Card>
             <Card>
@@ -183,7 +214,7 @@ function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">+{totalOrders}</div>
-                     <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+                     <p className="text-xs text-muted-foreground">Paid orders today</p>
                 </CardContent>
             </Card>
             <Card>
@@ -193,10 +224,13 @@ function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">£{averageOrderValue.toFixed(2)}</div>
-                     <p className="text-xs text-muted-foreground">+19% from last month</p>
+                     <p className="text-xs text-muted-foreground">Based on gross revenue</p>
                 </CardContent>
             </Card>
-            <Card className="lg:col-span-1">
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-3">
+            <Card>
                 <CardHeader>
                     <CardTitle className="font-headline text-lg">Payment Methods</CardTitle>
                     <CardDescription>Distribution of transactions by payment type.</CardDescription>
@@ -222,13 +256,10 @@ function ReportsPage() {
                     </ChartContainer>
                 </CardContent>
             </Card>
-        </div>
-
-        <div className="grid gap-8 md:grid-cols-2">
-            <Card>
+            <Card className="md:col-span-2">
             <CardHeader>
-                <CardTitle className="font-headline">Sales by Category</CardTitle>
-                <CardDescription>Breakdown of sales across different menu categories for the current month.</CardDescription>
+                <CardTitle className="font-headline">Net Sales by Category</CardTitle>
+                <CardDescription>Breakdown of net sales (excl. VAT) across menu categories.</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -236,18 +267,23 @@ function ReportsPage() {
                     <BarChart data={salesData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `£${value.toFixed(0)}`} />
+                    <ChartTooltip content={<ChartTooltipContent />} formatter={(value, name, props) => {
+                        return [ `£${(value as number).toFixed(2)}`, props.payload.name ]
+                    }} />
                     <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
                     </BarChart>
                 </ResponsiveContainer>
                 </ChartContainer>
             </CardContent>
             </Card>
+        </div>
+        
+         <div className="grid grid-cols-1">
             <Card>
             <CardHeader>
-                <CardTitle className="font-headline">Weekly Revenue</CardTitle>
-                <CardDescription>Revenue trend for the current week.</CardDescription>
+                <CardTitle className="font-headline">Weekly Net Revenue</CardTitle>
+                <CardDescription>Net revenue trend (excl. VAT) for the current week.</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -255,7 +291,7 @@ function ReportsPage() {
                     <LineChart data={revenueData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `£${value.toFixed(0)}`} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
                     </LineChart>
@@ -268,7 +304,7 @@ function ReportsPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Recent Transactions</CardTitle>
-                <CardDescription>A log of the most recent orders.</CardDescription>
+                <CardDescription>A log of the most recent orders with tax breakdown.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -277,18 +313,24 @@ function ReportsPage() {
                             <TableHead>Order ID</TableHead>
                             <TableHead>Table</TableHead>
                             <TableHead>Time</TableHead>
-                            <TableHead>Payment Method</TableHead>
+                            <TableHead>Payment</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Net</TableHead>
+                            <TableHead className="text-right">VAT</TableHead>
+                            <TableHead className="text-right">Gross Total</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {mockOrders.slice(0, 5).map((order) => {
-                            const total = order.items.reduce((sum, item) => {
+                            const grossTotal = (order.items.reduce((sum, item) => {
                                 const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
                                 const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
                                 return sum + itemTotal;
-                            }, 0);
+                            }, 0)) - (order.discount || 0);
+
+                            const vatAmount = order.status === 'Cancelled' ? 0 : grossTotal * (VAT_RATE / (1 + VAT_RATE));
+                            const netTotal = grossTotal - vatAmount;
+
                             return (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-medium">#{order.id}</TableCell>
@@ -301,7 +343,9 @@ function ReportsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell><Badge variant={order.status === 'Paid' ? 'default' : 'destructive'}>{order.status}</Badge></TableCell>
-                                    <TableCell className="text-right">£{total.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">£{netTotal.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">£{vatAmount.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold">£{grossTotal.toFixed(2)}</TableCell>
                                 </TableRow>
                             );
                         })}
