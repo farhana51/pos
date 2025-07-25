@@ -12,7 +12,7 @@ import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, se
 import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order, PaymentMethod } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart, PercentCircle } from 'lucide-react';
+import { CreditCard, HandCoins, MinusCircle, PlusCircle, Printer, Sparkles, Tag, Users, X, ShoppingCart, PercentCircle, Divide, List, Edit } from 'lucide-react';
 import { useState, use, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -209,88 +209,104 @@ function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder, d
   );
 }
 
-function BillSplittingDialog({ items }: { items: OrderItem[] }) {
-    const [splitItems, setSplitItems] = useState<Record<number, OrderItem[]>>({ 1: [], 2: [] });
-    const [selectedBill, setSelectedBill] = useState<number>(1);
+function BillSplittingDialog({ order, onPartialPay }: { order: Order, onPartialPay: (amount: number, method: PaymentMethod) => void }) {
+    const [open, setOpen] = useState(false);
+    const [splitBy, setSplitBy] = useState(2);
+    const [customAmounts, setCustomAmounts] = useState<number[]>([0]);
 
-    const unassignedItems = items.filter(
-        item => ![...splitItems[1], ...splitItems[2]].some(splitItem => splitItem.menuItem.id === item.menuItem.id)
-    );
+    const total = (order.items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0)) - (order.discount || 0);
+    const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const remainingTotal = total - totalPaid;
 
-    const handleAssignItem = (item: OrderItem, billNumber: number) => {
-        setSplitItems(prev => ({
-            ...prev,
-            [billNumber]: [...prev[billNumber], item]
-        }));
-    };
+    const handlePay = (amount: number) => {
+        // This is a simplified payment flow for the dialog
+        // A real implementation would have method selection etc.
+        onPartialPay(amount, 'Card');
+    }
+    
+    useEffect(() => {
+        if(open) {
+            setCustomAmounts([0]);
+            setSplitBy(2);
+        }
+    }, [open]);
 
-    const handleUnassignItem = (item: OrderItem, billNumber: number) => {
-        setSplitItems(prev => ({
-            ...prev,
-            [billNumber]: prev[billNumber].filter(i => i.menuItem.id !== item.menuItem.id)
-        }));
-    };
-
-    const calculateBillTotal = (billItems: OrderItem[]) => {
-        const subtotal = billItems.reduce((sum, item) => {
-            const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
-            return sum + (item.menuItem.price + addonsTotal) * item.quantity;
-        }, 0);
-        return subtotal;
-    };
+    const customTotal = customAmounts.reduce((a, b) => a + b, 0);
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="secondary" disabled={items.length === 0}><Users className="mr-2" /> Split Bill</Button>
+                <Button variant="secondary" disabled={order.items.length === 0}><Users className="mr-2" /> Split Bill</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Split the Bill</DialogTitle>
+                    <DialogDescription>
+                        Remaining to pay: <span className="font-bold">£{remainingTotal.toFixed(2)}</span>
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-3 gap-4 py-4">
-                    <div className="col-span-1">
-                        <h3 className="font-semibold mb-2">Unassigned Items</h3>
-                        <div className="space-y-2 rounded-md border p-2 h-96 overflow-y-auto">
-                            {unassignedItems.map((item, idx) => (
-                                <div key={idx} className="p-2 border rounded-md text-sm">
-                                    <p>{item.menuItem.name} (x{item.quantity})</p>
-                                    <div className="flex gap-2 mt-1">
-                                        <Button size="sm" variant="outline" onClick={() => handleAssignItem(item, 1)}>Bill 1</Button>
-                                        <Button size="sm" variant="outline" onClick={() => handleAssignItem(item, 2)}>Bill 2</Button>
-                                    </div>
+                <Tabs defaultValue="evenly" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="evenly"><Divide className="mr-2"/>Evenly</TabsTrigger>
+                        <TabsTrigger value="items"><List className="mr-2"/>By Item</TabsTrigger>
+                        <TabsTrigger value="amount"><Edit className="mr-2"/>By Amount</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="evenly" className="pt-4">
+                        <div className="space-y-4">
+                            <Label htmlFor="split-by-input">Split between how many people?</Label>
+                            <Input 
+                                id="split-by-input" 
+                                type="number" 
+                                min="2" 
+                                value={splitBy} 
+                                onChange={(e) => setSplitBy(Math.max(2, parseInt(e.target.value) || 2))} 
+                                className="w-24 text-center"
+                            />
+                            <div className="text-2xl font-bold text-center p-8 bg-muted rounded-md">
+                                £{(remainingTotal / splitBy).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">each</span>
+                            </div>
+                            <Button className="w-full" onClick={() => handlePay(remainingTotal / splitBy)}>Pay £{(remainingTotal / splitBy).toFixed(2)}</Button>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="items" className="pt-4">
+                         <div className="text-center p-8 bg-muted rounded-md text-muted-foreground">
+                            <p>This feature is coming soon!</p>
+                            <p className="text-sm">Itemised splitting will allow you to assign items to individual payers.</p>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="amount" className="pt-4">
+                        <div className="space-y-4">
+                             {customAmounts.map((amount, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Label className="w-20">Person {index + 1}</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={amount || ''}
+                                        onChange={(e) => {
+                                            const newAmounts = [...customAmounts];
+                                            newAmounts[index] = parseFloat(e.target.value) || 0;
+                                            setCustomAmounts(newAmounts);
+                                        }}
+                                    />
+                                    <Button onClick={() => handlePay(amount)}>Pay</Button>
                                 </div>
                             ))}
-                            {unassignedItems.length === 0 && <p className="text-muted-foreground text-sm p-4 text-center">All items assigned.</p>}
-                        </div>
-                    </div>
-                    <div className="col-span-2 grid grid-cols-2 gap-4">
-                        {[1, 2].map(billNumber => (
-                            <div key={billNumber}>
-                                <h3 className="font-semibold mb-2">Bill {billNumber}</h3>
-                                <div className="space-y-2 rounded-md border p-2 h-96 overflow-y-auto">
-                                    {splitItems[billNumber].map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-2 border rounded-md text-sm">
-                                            <span>{item.menuItem.name} (x{item.quantity})</span>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleUnassignItem(item, billNumber)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    <div className="font-bold text-right pr-2 pt-2 border-t">
-                                        Total: £{calculateBillTotal(splitItems[billNumber]).toFixed(2)}
-                                    </div>
-                                </div>
+                            <Button variant="outline" onClick={() => setCustomAmounts([...customAmounts, 0])}>Add Person</Button>
+                            <Separator/>
+                            <div className="flex justify-between font-bold">
+                                <span>Total Entered:</span>
+                                <span>£{customTotal.toFixed(2)}</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={() => {
-                        // In a real app, this would perform some action.
-                        console.log('Bills split:', splitItems);
-                    }}>Confirm Split</Button>
+                            <div className="flex justify-between font-bold text-destructive">
+                                <span>Remaining:</span>
+                                <span>£{(remainingTotal - customTotal).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="ghost">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -374,7 +390,8 @@ function PaymentDialog({ order, onSuccessfulPayment, discountAmount }: { order: 
         return sum + itemTotal;
     }, 0);
 
-    const grandTotal = subtotal - discountAmount;
+    const totalPaid = order.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const grandTotal = subtotal - discountAmount - totalPaid;
 
     const handlePayment = () => {
         if (paymentMethod) {
@@ -401,6 +418,7 @@ function PaymentDialog({ order, onSuccessfulPayment, discountAmount }: { order: 
                      <div className="space-y-2">
                         <div className="flex justify-between"><span>Subtotal</span> <span>£{subtotal.toFixed(2)}</span></div>
                         {discountAmount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span> <span>- £{discountAmount.toFixed(2)}</span></div>}
+                        {totalPaid > 0 && <div className="flex justify-between text-green-600"><span>Already Paid</span> <span>- £{totalPaid.toFixed(2)}</span></div>}
                         <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total to Pay</span> <span>£{grandTotal.toFixed(2)}</span></div>
                     </div>
                     
@@ -423,7 +441,7 @@ function PaymentDialog({ order, onSuccessfulPayment, discountAmount }: { order: 
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={handlePayment} disabled={!paymentMethod}>Process Payment ( £{grandTotal.toFixed(2)} )</Button>
+                    <Button onClick={handlePayment} disabled={!paymentMethod || grandTotal <= 0}>Process Payment ( £{grandTotal.toFixed(2)} )</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -583,6 +601,7 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
@@ -685,9 +704,35 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         if (orderIndex > -1) {
             const updatedOrder = { ...order, discount: appliedDiscount };
             mockOrders[orderIndex] = updatedOrder;
+            setOrder(updatedOrder);
         }
-        router.push(`/dashboard`);
+        toast({
+            title: "Order Updated",
+            description: "The order items and discount have been saved.",
+        })
     }
+    
+  const handlePartialPayment = (amount: number, method: PaymentMethod) => {
+    const newPayment = { amount, method, date: new Date().toISOString() };
+    const updatedOrder = {
+        ...order,
+        payments: [...(order.payments || []), newPayment]
+    };
+    
+    // Update state
+    setOrder(updatedOrder);
+    
+    // Update mock data
+    const orderIndex = mockOrders.findIndex(o => o.id === order.id);
+    if (orderIndex > -1) {
+        mockOrders[orderIndex] = updatedOrder;
+    }
+
+    toast({
+        title: "Payment Received",
+        description: `£${amount.toFixed(2)} paid by ${method}.`,
+    })
+  }
 
   const handleSuccessfulPayment = (paymentMethod: PaymentMethod, discountApplied: number) => {
     // Update order status
@@ -744,7 +789,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
                         </div>
                     )}
                     <div className="flex flex-col gap-2 pt-4 border-t">
-                        <BillSplittingDialog items={order.items} />
+                        <BillSplittingDialog order={order} onPartialPay={handlePartialPayment} />
                         {canApplyDiscount && <TableTransferDialog orderId={order.id} currentTableId={order.tableId} />}
                         {canApplyDiscount && <CancelOrderDialog orderId={order.id} onCancel={handleCancelOrder} />}
                     </div>

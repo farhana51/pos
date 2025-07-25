@@ -48,6 +48,11 @@ export interface OrderItem {
 export type PaymentMethod = 'Cash' | 'Card' | 'Voucher';
 export type OrderStatus = 'Paid' | 'Pending' | 'Cancelled';
 
+export interface Payment {
+    amount: number;
+    method: PaymentMethod;
+    date: string;
+}
 
 export interface Order {
   id: number;
@@ -59,6 +64,7 @@ export interface Order {
   paymentMethod?: PaymentMethod;
   guests?: number;
   discount?: number;
+  payments?: Payment[];
 }
 
 export interface Reservation {
