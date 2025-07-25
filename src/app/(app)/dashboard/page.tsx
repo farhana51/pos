@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { mockTables as initialMockTables, getOrderByTableId } from "@/lib/data";
-import type { Table, TableStatus } from "@/lib/types";
+import type { Table, TableStatus, UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -27,7 +27,7 @@ const statusConfig: Record<TableStatus, { border: string; bg: string; label: str
   Dirty: { border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Needs Cleaning" },
 };
 
-function TableVisual({ table, isSelected, onMouseDown }: { table: Table; isSelected: boolean; onMouseDown: (e: React.MouseEvent<HTMLDivElement>, tableId: number) => void }) {
+function TableVisual({ table, isSelected, onMouseDown, canMove }: { table: Table; isSelected: boolean; onMouseDown: (e: React.MouseEvent<HTMLDivElement>, tableId: number) => void, canMove: boolean }) {
   const config = statusConfig[table.status];
   
   const getChairPositions = (count: number, width: number, height: number) => {
@@ -61,7 +61,8 @@ function TableVisual({ table, isSelected, onMouseDown }: { table: Table; isSelec
   return (
     <div
       className={cn(
-        "absolute cursor-grab active:cursor-grabbing transition-transform duration-200 hover:scale-110",
+        "absolute transition-transform duration-200 hover:scale-110",
+        canMove ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
         isSelected && "scale-110 ring-2 ring-primary ring-offset-2 ring-offset-background rounded-md z-20"
       )}
       style={{ top: `${table.y}px`, left: `${table.x}px` }}
@@ -216,6 +217,18 @@ export default function DashboardPage() {
   
   const floorPlanRef = useRef<HTMLDivElement>(null);
   const draggingTable = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            setCurrentUserRole(JSON.parse(storedUser).role);
+        }
+    }
+  }, []);
+
+  const canMoveTables = currentUserRole === 'Admin';
 
   const selectedTable = tables.find(t => t.id === selectedTableId) ?? null;
   const [tableForGuestInput, setTableForGuestInput] = useState<Table | null>(null);
@@ -238,25 +251,27 @@ export default function DashboardPage() {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, tableId: number) => {
     e.preventDefault();
-    const table = tables.find(t => t.id === tableId);
-    
-    // Select the table first
     setSelectedTableId(tableId);
+    
+    const table = tables.find(t => t.id === tableId);
+    if (!table) return;
 
-    // If table is available, open guest dialog. Otherwise, handle dragging.
-    if (table && table.status === 'Available') {
-        setTableForGuestInput(table);
-    } else {
-        const tableElement = e.currentTarget;
-        const rect = tableElement.getBoundingClientRect();
-        draggingTable.current = {
-          id: tableId,
-          offsetX: e.clientX - rect.left,
-          offsetY: e.clientY - rect.top,
-        };
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+    // If user is not admin, just handle the click action and return
+    if (!canMoveTables) {
+      handleTableClick(tableId);
+      return;
     }
+
+    // Admin can move tables
+    const tableElement = e.currentTarget;
+    const rect = tableElement.getBoundingClientRect();
+    draggingTable.current = {
+      id: tableId,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -286,11 +301,19 @@ export default function DashboardPage() {
     );
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: MouseEvent) => {
     if (draggingTable.current) {
-        const table = tables.find(t => t.id === draggingTable.current!.id);
-        if (table && (table.status === 'Occupied' || table.status === 'Billed')) {
-            router.push(`/orders/${table.orderId}`);
+        // If we were dragging, check if it was just a click without movement
+        const draggedTableId = draggingTable.current.id;
+        const tableElement = (e.target as HTMLElement).closest('[style*="top"]');
+        if (tableElement) {
+            const initialX = tables.find(t => t.id === draggedTableId)?.x;
+            const initialY = tables.find(t => t.id === draggedTableId)?.y;
+            // A small threshold to differentiate a click from a drag
+            if (Math.abs(initialX! - parseFloat(tableElement.getAttribute('style')!.split('left: ')[1])) < 5 &&
+                Math.abs(initialY! - parseFloat(tableElement.getAttribute('style')!.split('top: ')[1])) < 5) {
+                 handleTableClick(draggedTableId);
+            }
         }
     }
     draggingTable.current = null;
@@ -322,10 +345,12 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Restaurant Floor Plan">
-        <Button onClick={handleSaveLayout} variant="outline">
-            <Save className="mr-2 h-4 w-4" />
-            Save Layout
-        </Button>
+        {canMoveTables && (
+            <Button onClick={handleSaveLayout} variant="outline">
+                <Save className="mr-2 h-4 w-4" />
+                Save Layout
+            </Button>
+        )}
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 items-start">
         <div className={cn("md:col-span-2", !selectedTable && "md:col-span-3 transition-all duration-300")}>
@@ -344,13 +369,18 @@ export default function DashboardPage() {
                                     className="relative h-[600px] w-full bg-cover bg-center rounded-md border"
                                     style={{ backgroundImage: `url(${floorPlanBackgrounds[floor]?.url ?? ''})` }}
                                     data-ai-hint={floorPlanBackgrounds[floor]?.hint ?? ''}
-                                    onClick={() => setSelectedTableId(null)}
+                                    onClick={(e) => {
+                                        if (e.target === floorPlanRef.current) {
+                                            setSelectedTableId(null)
+                                        }
+                                    }}
                                 >
                                     {tables.filter(t => t.floor === floor).map((table) => (
                                         <TableVisual 
                                             key={table.id} 
                                             table={table} 
                                             isSelected={selectedTableId === table.id}
+                                            canMove={canMoveTables}
                                             onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 handleMouseDown(e, table.id);
