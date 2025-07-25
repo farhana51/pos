@@ -46,7 +46,8 @@ function TeamPage() {
         if(editingMember) {
             setTeam(team.map(m => m.id === member.id ? member : m));
         } else {
-            setTeam([...team, { ...member, id: team.length + 1, avatarUrl: 'https://placehold.co/100x100.png' }]);
+            const newMember = { ...member, id: Math.max(...team.map(m => m.id)) + 1, avatarUrl: 'https://placehold.co/100x100.png' };
+            setTeam([...team, newMember]);
         }
     }
 
@@ -69,6 +70,7 @@ function TeamPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Employee</TableHead>
+                                    <TableHead>User ID</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Role</TableHead>
                                     <TableHead>Status</TableHead>
@@ -85,6 +87,7 @@ function TeamPage() {
                                             </Avatar>
                                             {member.name}
                                         </TableCell>
+                                        <TableCell>{member.userId}</TableCell>
                                         <TableCell>{member.email}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className={roleColors[member.role]}>{member.role}</Badge>

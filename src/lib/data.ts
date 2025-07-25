@@ -1,10 +1,11 @@
 import type { Table, MenuItem, Order, Reservation, User, UserRole, TeamMember, InventoryItem, Customer } from './types';
 
 // --- User Data ---
-const allUsers: User[] = [
-    { id: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 'user1', password: 'user1', name: 'Bob', role: 'Advanced', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 'user', password: 'user', name: 'Charlie', role: 'Basic', avatarUrl: 'https://placehold.co/100x100.png' }
+// This is now the single source of truth for all users/team members.
+export let mockTeam: TeamMember[] = [
+    { id: 1, userId: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', email: 'alex@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 2, userId: 'user1', password: 'user1', name: 'Bob', role: 'Advanced', email: 'bob@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: 3, userId: 'user', password: 'user', name: 'Charlie', role: 'Basic', email: 'charlie@example.com', status: 'Inactive', avatarUrl: 'https://placehold.co/100x100.png' }
 ];
 
 // --- Authentication and State Management (for demo purposes) ---
@@ -14,7 +15,13 @@ const allUsers: User[] = [
  * and the user object would be fetched from a secure API endpoint.
  * We are using a simple mutable object and localStorage here to simulate a logged-in session.
  */
-export let mockUser: User = allUsers[0]; // Default to admin for initial load
+export let mockUser: User = {
+    id: mockTeam[0].id,
+    userId: mockTeam[0].userId,
+    name: mockTeam[0].name,
+    role: mockTeam[0].role,
+    avatarUrl: mockTeam[0].avatarUrl,
+}; // Default to admin for initial load
 
 if (typeof window !== 'undefined') {
     const storedUser = localStorage.getItem('currentUser');
@@ -24,7 +31,17 @@ if (typeof window !== 'undefined') {
 }
 
 export const findUserByCredentials = (id: string, pass: string): User | undefined => {
-    return allUsers.find(u => u.id === id && u.password === pass);
+    const foundMember = mockTeam.find(u => u.userId === id && u.password === pass && u.status === 'Active');
+    if (foundMember) {
+        return {
+            id: foundMember.id,
+            userId: foundMember.userId,
+            name: foundMember.name,
+            role: foundMember.role,
+            avatarUrl: foundMember.avatarUrl
+        };
+    }
+    return undefined;
 };
 
 export const setCurrentUser = (user: User) => {
@@ -39,7 +56,7 @@ export const logoutUser = () => {
         localStorage.removeItem('currentUser');
     }
     // Set a default user so the app doesn't crash on logout
-    mockUser = { id: '', name: 'Guest', role: 'Basic', avatarUrl: '' }; 
+    mockUser = { id: 0, userId: '', name: 'Guest', role: 'Basic', avatarUrl: '' }; 
 }
 
 /**
@@ -80,12 +97,6 @@ export const mockInventory: InventoryItem[] = [
     { id: 13, name: 'Potatoes', stock: 40, unit: 'kg', lowThreshold: 15 },
 ]
 
-export const mockTeam: TeamMember[] = [
-    { id: 1, name: 'Alice Johnson', role: 'Admin', email: 'alice@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 2, name: 'Bob Williams', role: 'Advanced', email: 'bob@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 3, name: 'Charlie Brown', role: 'Basic', email: 'charlie@example.com', status: 'Inactive', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: 4, name: 'Diana Miller', role: 'Basic', email: 'diana@example.com', status: 'Active', avatarUrl: 'https://placehold.co/100x100.png' },
-];
 
 export const mockTables: Table[] = [
   { id: 1, capacity: 4, status: 'Available', x: 100, y: 50, width: 20, height: 20, floor: 'Main Floor' },

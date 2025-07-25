@@ -7,13 +7,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TeamMember } from "@/lib/types";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
+  userId: z.string().min(1, "User ID is required."),
+  password: z.string().optional(),
   email: z.string().email("Invalid email address."),
   role: z.enum(["Basic", "Advanced", "Admin"]),
   status: z.enum(["Active", "Inactive"]),
@@ -33,6 +35,8 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      userId: "",
+      password: "",
       email: "",
       role: "Basic",
       status: "Active",
@@ -43,6 +47,8 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
     if (member) {
       form.reset({
         name: member.name,
+        userId: member.userId,
+        password: member.password ?? "",
         email: member.email,
         role: member.role,
         status: member.status,
@@ -50,6 +56,8 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
     } else {
       form.reset({
         name: "",
+        userId: "",
+        password: "",
         email: "",
         role: "Basic",
         status: "Active",
@@ -58,11 +66,15 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
   }, [member, form, isOpen]);
 
   const onSubmit = (data: TeamMemberFormValues) => {
-    onSave({
+    const memberData: TeamMember = {
         ...data,
         id: member?.id ?? 0, // A real app would generate a proper ID
         avatarUrl: member?.avatarUrl ?? '',
-    });
+    };
+    if (!data.password) {
+        delete memberData.password;
+    }
+    onSave(memberData);
     setIsOpen(false);
   };
 
@@ -87,7 +99,36 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
                 </FormItem>
               )}
             />
-            <FormField
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="userId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>User ID</FormLabel>
+                    <FormControl>
+                        <Input placeholder="johndoe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                        <Input type="password" {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">Leave blank to keep unchanged.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
+             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -100,49 +141,51 @@ export function TeamMemberDialog({ isOpen, setIsOpen, onSave, member }: TeamMemb
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Role</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
-                      <SelectItem value="Basic">Basic</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                        <SelectItem value="Advanced">Advanced</SelectItem>
+                        <SelectItem value="Basic">Basic</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a status" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
              <DialogFooter>
                 <DialogClose asChild>
                     <Button type="button" variant="ghost">Cancel</Button>

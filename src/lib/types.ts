@@ -1,8 +1,8 @@
 export type UserRole = 'Basic' | 'Advanced' | 'Admin';
 
 export interface User {
-  id: string;
-  password?: string;
+  id: number;
+  userId: string;
   name: string;
   role: UserRole;
   avatarUrl: string;
@@ -81,6 +81,8 @@ export interface Reservation {
 
 export interface TeamMember {
   id: number;
+  userId: string;
+  password?: string;
   name: string;
   role: UserRole;
   email: string;
