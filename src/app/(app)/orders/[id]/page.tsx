@@ -1,13 +1,14 @@
 
 
 
+
 'use client'
 
 import { notFound, useRouter, useSearchParams, useParams } from 'next/navigation';
 import React from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockOrders, mockMenu, getOrderByTableId as getOrderData, mockTables, setUserRole, mockUser } from '@/lib/data';
 import type { OrderItem, MenuItem, Addon, UserRole, Table as TableType, Order } from '@/lib/types';
@@ -189,7 +190,7 @@ function OrderItemsTable({ items, onUpdateItems, onSendOrder, isExistingOrder }:
                 <span>Subtotal</span>
                 <span>£{subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between w-full font-bold text-lg">
+            <div className="flex justify-between font-bold text-lg">
                 <span>Grand Total</span>
                 <span>£{grandTotal.toFixed(2)}</span>
             </div>
@@ -344,20 +345,41 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
     )
 }
 
-function PaymentDialog({ total }: { total: number }) {
+function PaymentDialog({ order }: { order: Order }) {
     const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
     const { toast } = useToast();
     const router = useRouter();
 
     const handlePayment = () => {
         if (paymentMethod) {
+            // Update order status
+            const orderIndex = mockOrders.findIndex(o => o.id === order.id);
+            if(orderIndex !== -1) {
+                mockOrders[orderIndex].status = 'Paid';
+                mockOrders[orderIndex].paymentMethod = paymentMethod as PaymentMethod;
+            }
+
+            // Update table status
+            const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+            if(tableIndex !== -1) {
+                mockTables[tableIndex].status = 'Available';
+                delete mockTables[tableIndex].orderId;
+            }
+
             toast({
                 title: "Payment Successful",
-                description: `Paid £${total.toFixed(2)} via ${paymentMethod}.`,
+                description: `Paid £${grandTotal.toFixed(2)} via ${paymentMethod}. Table ${order.tableId} is now available.`,
             });
             router.push('/dashboard');
         }
     }
+    
+    const grandTotal = order.items.reduce((sum, item) => {
+        const addonsTotal = item.selectedAddons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0;
+        const itemTotal = (item.menuItem.price + addonsTotal) * item.quantity;
+        return sum + itemTotal;
+    }, 0);
+
 
     const paymentOptions = [
         { id: 'Cash', name: 'Cash', icon: HandCoins },
@@ -373,7 +395,7 @@ function PaymentDialog({ total }: { total: number }) {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Finalize Payment</DialogTitle>
-                    <DialogDescription>Total amount to be paid: <span className="font-bold text-foreground">£{total.toFixed(2)}</span></DialogDescription>
+                    <DialogDescription>Total amount to be paid: <span className="font-bold text-foreground">£{grandTotal.toFixed(2)}</span></DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                     <Label>Select Payment Method</Label>
@@ -464,6 +486,7 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -517,6 +540,10 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
+        toast({
+            title: "Order Sent to Kitchen",
+            description: `Order #${newOrderId} for Table ${tableId} has been sent.`,
+        });
         router.push(`/landing`);
     }
 
@@ -624,7 +651,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
     <>
       <PageHeader title={`Order #${order.id} - Table ${order.tableId}`}>
         <Button variant="outline" onClick={handlePrint}><Printer className="mr-2" /> Print Order</Button>
-        <PaymentDialog total={grandTotal} />
+        <PaymentDialog order={order} />
       </PageHeader>
       <main className="p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8 h-[calc(100vh-120px)]">
         <div className="md:col-span-2 h-full">
@@ -679,5 +706,3 @@ function OrderDetailsPage() {
 
 // Wrapping with withAuth HOC and specifying required roles
 export default withAuth(OrderDetailsPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
-
-    
