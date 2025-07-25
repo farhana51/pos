@@ -717,10 +717,12 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
     }
 
     // Update table status
-    const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
-    if(tableIndex !== -1) {
-        mockTables[tableIndex].status = 'Available';
-        delete mockTables[tableIndex].orderId;
+    if (order.type === 'Table') {
+        const tableIndex = mockTables.findIndex(t => t.id === order.tableId);
+        if(tableIndex !== -1) {
+            mockTables[tableIndex].status = 'Available';
+            delete mockTables[tableIndex].orderId;
+        }
     }
 
     router.push('/dashboard');
@@ -783,7 +785,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         }
     }
 
-    router.push('/dashboard');
+    router.push('/landing');
   }
 
   return (
