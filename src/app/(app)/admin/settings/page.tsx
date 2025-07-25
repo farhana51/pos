@@ -116,29 +116,30 @@ function SettingsPage() {
             <div className="lg:col-span-2 space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Modules</CardTitle>
-                        <CardDescription>Enable or disable major features of the application.</CardDescription>
+                        <CardTitle className="font-headline">Core Services</CardTitle>
+                        <CardDescription>Enable or disable the main features of your application.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <SettingRow id="restaurant" title="Restaurant (Floor Plan)" description="Manage table layout and dine-in orders." isChecked={settings.restaurant} onCheckedChange={handleSettingChange('restaurant')} />
+                        <SettingRow id="collection" title="Collection / Takeaway" description="Allow customers to order for pickup." isChecked={settings.collection} onCheckedChange={handleSettingChange('collection')} />
+                        <SettingRow id="delivery" title="Delivery" description="Offer a delivery service." isChecked={settings.delivery} onCheckedChange={handleSettingChange('delivery')} />
+                        <SettingRow id="online-ordering" title="Online Orders" description="Accept orders from your website." isChecked={settings.onlineOrdering} onCheckedChange={handleSettingChange('onlineOrdering')} />
                         <SettingRow id="reservations" title="Reservation Management" description="Allow customers to book tables in advance." isChecked={settings.reservations} onCheckedChange={handleSettingChange('reservations')} />
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Advanced Modules</CardTitle>
+                        <CardDescription>Enable or disable additional features of the application.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         <SettingRow id="inventory" title="Inventory Management" description="Track ingredient stock levels." isChecked={settings.inventory} onCheckedChange={handleSettingChange('inventory')} />
                         <SettingRow id="crm" title="CRM & Loyalty Program" description="Manage customer relationships and rewards." isChecked={settings.crm} onCheckedChange={handleSettingChange('crm')} />
                         <SettingRow id="suppliers" title="Suppliers & Purchase Orders" description="Manage suppliers and purchase orders." isChecked={settings.suppliers} onCheckedChange={handleSettingChange('suppliers')} />
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Ordering Channels</CardTitle>
-                        <CardDescription>Control which ordering methods are available.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <SettingRow id="online-ordering" title="Online Orders" description="Accept orders from your website." isChecked={settings.onlineOrdering} onCheckedChange={handleSettingChange('onlineOrdering')} />
-                        <SettingRow id="collection" title="Collection / Takeaway" description="Allow customers to order for pickup." isChecked={settings.collection} onCheckedChange={handleSettingChange('collection')} />
-                        <SettingRow id="delivery" title="Delivery" description="Offer a delivery service." isChecked={settings.delivery} onCheckedChange={handleSettingChange('delivery')} />
-                    </CardContent>
-                </Card>
                  <Card>
                     <CardHeader>
                         <CardTitle className="font-headline">Discount Settings</CardTitle>
