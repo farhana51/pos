@@ -86,7 +86,8 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
   
   useEffect(() => {
     // Reset subcategory if category changes and the old subcategory is not valid anymore
-    if (!subcategoryOptions.includes(form.getValues('subcategory') ?? '')) {
+    const currentSubcategory = form.getValues('subcategory');
+    if (currentSubcategory && !subcategoryOptions.includes(currentSubcategory)) {
       form.setValue('subcategory', '');
     }
   }, [selectedCategoryName, subcategoryOptions, form]);
@@ -145,7 +146,8 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
                   </FormItem>
                 )}
               />
-              <FormField
+              <div className="grid grid-cols-2 gap-4">
+                  <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
@@ -158,6 +160,7 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item, categories }: 
                     </FormItem>
                   )}
                 />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                   <FormField
                   control={form.control}
