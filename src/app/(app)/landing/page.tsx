@@ -46,7 +46,7 @@ const allServiceOptions = [
     title: "Online Order",
     icon: Globe,
     href: "/online-orders",
-    roles: ['Admin', 'Advanced'],
+    roles: ['Admin', 'Advanced', 'Basic'],
     setting: "onlineOrdering"
   },
   {
