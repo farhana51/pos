@@ -46,7 +46,6 @@ function SettingsPage() {
     const [discountSettings, setDiscountSettings] = useState({
         enabled: true,
         type: 'percentage' as 'percentage' | 'amount',
-        value: 10,
     });
 
     useEffect(() => {
@@ -156,16 +155,6 @@ function SettingsPage() {
                                             <Label htmlFor="r-amount">Fixed Amount (£)</Label>
                                         </div>
                                     </RadioGroup>
-                                </div>
-                                <div>
-                                    <Label htmlFor="discount-value">Default Discount Value</Label>
-                                    <Input 
-                                        id="discount-value"
-                                        type="number"
-                                        value={discountSettings.value}
-                                        onChange={(e) => handleDiscountSettingChange('value', parseFloat(e.target.value))}
-                                        placeholder={discountSettings.type === 'percentage' ? 'e.g., 10 for 10%' : 'e.g., 5 for £5.00'}
-                                    />
                                 </div>
                             </>
                         )}

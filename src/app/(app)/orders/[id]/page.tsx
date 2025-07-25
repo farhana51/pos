@@ -344,7 +344,7 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
 function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccessfulPayment: (paymentMethod: PaymentMethod, discountApplied: number) => void; }) {
     const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
     const router = useRouter();
-    const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage', value: 0 });
+    const [discountSettings, setDiscountSettings] = useState({ enabled: false, type: 'percentage' });
     const [appliedDiscount, setAppliedDiscount] = useState(0);
     const [customDiscount, setCustomDiscount] = useState<number | string>('');
 
@@ -379,17 +379,6 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
             setAppliedDiscount(value > subtotal ? subtotal : value);
         }
     }
-
-    const handleApplyDefaultDiscount = () => {
-         if (discountSettings.type === 'percentage') {
-            const discount = (subtotal * discountSettings.value) / 100;
-            setAppliedDiscount(discount > subtotal ? subtotal : discount);
-        } else {
-            setAppliedDiscount(discountSettings.value > subtotal ? subtotal : discountSettings.value);
-        }
-        setCustomDiscount('');
-    }
-
 
     const handlePayment = () => {
         if (paymentMethod) {
@@ -432,12 +421,7 @@ function PaymentDialog({ order, onSuccessfulPayment }: { order: Order; onSuccess
                                     onChange={(e) => setCustomDiscount(e.target.value)}
                                 />
                                 <Button variant="secondary" onClick={handleApplyDiscount}>Apply</Button>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <Button variant="outline" className="w-full" onClick={handleApplyDefaultDiscount}>
-                                    Apply Default ({discountSettings.value}{discountSettings.type === 'percentage' ? '%' : '£'})
-                                </Button>
-                                <Button variant="ghost" onClick={() => setAppliedDiscount(0)}>Remove</Button>
+                                 <Button variant="ghost" size="sm" onClick={() => { setAppliedDiscount(0); setCustomDiscount(''); }}>Remove</Button>
                              </div>
                         </div>
                         </>
