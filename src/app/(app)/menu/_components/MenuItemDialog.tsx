@@ -19,7 +19,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be a positive number."),
   category: z.string().min(1, "Category is required."),
   subcategory: z.string().optional(),
-  vatRate: z.coerce.number().min(0).max(100),
+  vatRate: z.coerce.number().min(0, "VAT rate is required."),
 });
 
 type MenuItemFormValues = z.infer<typeof formSchema>;
@@ -129,15 +129,15 @@ export function MenuItemDialog({ isOpen, setIsOpen, onSave, item }: MenuItemDial
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>VAT Rate (%)</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value.toString()}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value.toString()}>
                             <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select VAT rate" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="20">20%</SelectItem>
-                                <SelectItem value="0">0%</SelectItem>
+                                <SelectItem value="20">20% (Standard)</SelectItem>
+                                <SelectItem value="0">0% (Zero-rated)</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
