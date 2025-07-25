@@ -65,9 +65,10 @@ function SettingsPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleDiscountSettingChange = (key: keyof typeof discountSettings) => (value: any) => {
+    const handleDiscountSettingChange = (key: keyof typeof discountSettings, value: any) => {
         setDiscountSettings(prev => ({...prev, [key]: value}));
     }
+
 
     const handlePrinterIpChange = (index: number, value: string) => {
         const newIps = [...printerIps];
@@ -135,7 +136,7 @@ function SettingsPage() {
                             title="Enable Discounts"
                             description="Allow staff to apply discounts to orders during payment."
                             isChecked={discountSettings.enabled}
-                            onCheckedChange={handleDiscountSettingChange('enabled')}
+                            onCheckedChange={(checked) => handleDiscountSettingChange('enabled', checked)}
                         />
                          {discountSettings.enabled && (
                             <>
@@ -143,7 +144,7 @@ function SettingsPage() {
                                     <Label>Discount Type</Label>
                                     <RadioGroup 
                                         value={discountSettings.type} 
-                                        onValueChange={handleDiscountSettingChange('type')}
+                                        onValueChange={(value: 'percentage' | 'amount') => handleDiscountSettingChange('type', value)}
                                         className="mt-2"
                                     >
                                         <div className="flex items-center space-x-2">
@@ -157,12 +158,12 @@ function SettingsPage() {
                                     </RadioGroup>
                                 </div>
                                 <div>
-                                    <Label htmlFor="discount-value">Discount Value</Label>
+                                    <Label htmlFor="discount-value">Default Discount Value</Label>
                                     <Input 
                                         id="discount-value"
                                         type="number"
                                         value={discountSettings.value}
-                                        onChange={(e) => handleDiscountSettingChange('value')(parseFloat(e.target.value))}
+                                        onChange={(e) => handleDiscountSettingChange('value', parseFloat(e.target.value))}
                                         placeholder={discountSettings.type === 'percentage' ? 'e.g., 10 for 10%' : 'e.g., 5 for £5.00'}
                                     />
                                 </div>

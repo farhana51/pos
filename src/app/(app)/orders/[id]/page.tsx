@@ -41,11 +41,11 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
   const selectedItem = triggerElement;
 
   // Effect to open the dialog when an item is selected
-  useState(() => {
+  useEffect(() => {
     if(triggerElement) {
       setOpen(true);
     }
-  });
+  }, [triggerElement]);
   
   // When dialog closes, reset state
   const handleOpenChange = (isOpen: boolean) => {
