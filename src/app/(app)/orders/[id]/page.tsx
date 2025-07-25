@@ -280,7 +280,10 @@ function BillSplittingDialog({ items }: { items: OrderItem[] }) {
                 </div>
                  <DialogFooter>
                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={() => toast({ title: "Bills Split", description: "The bill has been successfully split into two."})}>Confirm Split</Button>
+                    <Button onClick={() => {
+                        // In a real app, this would perform some action. Here we just show a toast.
+                        console.log('Bills split:', splitItems);
+                    }}>Confirm Split</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -298,10 +301,6 @@ function TableTransferDialog({ orderId, currentTableId }: { orderId: number, cur
         if (targetTableId) {
             // In a real app, this would be a server action
             console.log(`Transferring Order ${orderId} from Table ${currentTableId} to Table ${targetTableId}`);
-            toast({
-                title: "Table Transferred",
-                description: `Order #${orderId} has been moved to Table ${targetTableId}.`
-            });
             // Simulate navigation or data refresh
             router.push(`/dashboard`);
         }
@@ -370,10 +369,6 @@ function PaymentDialog({ order }: { order: Order }) {
                 delete mockTables[tableIndex].orderId;
             }
 
-            toast({
-                title: "Payment Successful",
-                description: `Paid £${grandTotal.toFixed(2)} via ${paymentMethod}. Table ${order.tableId} is now available.`,
-            });
             router.push('/dashboard');
         }
     }
@@ -484,7 +479,6 @@ function MenuGrid({ onSelectItem }: { onSelectItem: (item: MenuItem) => void }) 
 function NewOrderPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { toast } = useToast();
     
     const tableIdParam = searchParams.get('tableId');
     const guestsParam = searchParams.get('guests');
@@ -538,10 +532,6 @@ function NewOrderPage() {
             mockTables[tableIndex].status = 'Occupied';
             mockTables[tableIndex].orderId = newOrderId;
         }
-        toast({
-            title: "Order Sent to Kitchen",
-            description: `Order #${newOrderId} for Table ${tableId} has been sent.`,
-        });
         router.push(`/landing`);
     }
 
@@ -579,7 +569,6 @@ function NewOrderPage() {
 
 function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   const router = useRouter();
-  const { toast } = useToast();
   const [order, setOrder] = useState<Order>(initialOrder);
   const hasAdvancedPermission = ['Admin', 'Advanced'].includes(mockUser.role);
   const [itemToCustomize, setItemToCustomize] = useState<MenuItem | null>(null);
@@ -613,10 +602,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
   };
 
   const handlePrint = () => {
-    toast({
-      title: "Printing...",
-      description: "Sending order to the kitchen printer.",
-    });
+    console.log("Printing order...");
   }
   
   const handleCancelOrder = () => {
@@ -638,10 +624,6 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
         if (orderIndex > -1) {
             mockOrders[orderIndex] = order;
         }
-        toast({
-            title: "Order Updated",
-            description: `Order #${order.id} has been sent to the kitchen.`
-        })
         router.push('/landing');
     }
 

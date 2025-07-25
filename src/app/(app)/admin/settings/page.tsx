@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { PageHeader } from "@/components/PageHeader";
@@ -61,16 +62,8 @@ function SettingsPage() {
         if (newFloorName && !floors.includes(newFloorName)) {
             setFloors(prev => [...prev, newFloorName]);
             setNewFloorName('');
-            toast({
-                title: "Floor Added",
-                description: `The "${newFloorName}" floor has been added.`,
-            });
         } else if (floors.includes(newFloorName)) {
-             toast({
-                variant: "destructive",
-                title: "Floor Exists",
-                description: "A floor with this name already exists.",
-            });
+             console.error("Floor already exists");
         }
     }
 
@@ -78,10 +71,6 @@ function SettingsPage() {
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
         console.log("Saving settings:", { settings, printerIps, floors });
-        toast({
-            title: "Settings Saved",
-            description: "Your changes have been successfully saved.",
-        });
     }
 
   return (

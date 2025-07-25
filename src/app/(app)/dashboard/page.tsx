@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import Link from "next/link";
@@ -211,7 +212,6 @@ const floorPlanBackgrounds: Record<string, {url: string, hint: string}> = {
 export default function DashboardPage() {
   const [tables, setTables] = useState<Table[]>(initialMockTables);
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
-  const { toast } = useToast();
   const router = useRouter();
   
   const floorPlanRef = useRef<HTMLDivElement>(null);
@@ -308,10 +308,6 @@ export default function DashboardPage() {
   const handleSaveLayout = () => {
     // In a real app, this would send the 'tables' state to a backend API
     console.log("Saving new layout:", tables.map(t => ({id: t.id, x: t.x, y: t.y, floor: t.floor})));
-    toast({
-        title: "Layout Saved",
-        description: "The new table positions have been saved.",
-    });
   }
 
   const handleConfirmGuests = (guests: number) => {

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect } from "react";
@@ -13,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
     const router = useRouter();
-    const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
@@ -32,17 +32,10 @@ export default function LoginPage() {
         const user = findUserByCredentials(email, password);
         if (user) {
             setCurrentUser(user);
-            toast({
-                title: "Login Successful",
-                description: `Welcome back, ${user.name}!`,
-            });
             router.push('/landing');
         } else {
-            toast({
-                variant: "destructive",
-                title: "Login Failed",
-                description: "Invalid email or password.",
-            });
+            // In a real app, you might show an error message
+            console.error("Login failed");
         }
     };
 
