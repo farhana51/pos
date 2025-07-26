@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Car, CreditCard, Eye, Globe, HandCoins, Home, Package, Printer, Tag, Trash2, Utensils } from "lucide-react";
 import { OrderReceiptDialog } from "./_components/OrderReceiptDialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const typeIcons: Record<Order['type'], React.ElementType> = {
@@ -64,8 +63,9 @@ function OrderHistoryPage() {
             mockOrders.splice(orderIndex, 1);
             setOrders(prev => prev.filter(o => o.id !== orderId));
             toast({
-                title: "Order Deleted",
-                description: `Order TIK-${orderId} has been removed from history.`,
+                title: "Order Refunded",
+                description: `Order TIK-${orderId} has been refunded and removed from history.`,
+                variant: 'destructive'
             });
         }
     }
@@ -116,30 +116,9 @@ function OrderHistoryPage() {
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">£{calculateTotal(order).toFixed(2)}</TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    This action cannot be undone. This will permanently delete order TIK-{order.id}.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteOrder(order.id)}>Delete</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
+                                                <Button variant="ghost" size="icon" onClick={() => setSelectedOrder(order)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -159,6 +138,7 @@ function OrderHistoryPage() {
                 isOpen={!!selectedOrder}
                 setIsOpen={(isOpen) => !isOpen && setSelectedOrder(null)}
                 order={selectedOrder}
+                onRefund={handleDeleteOrder}
             />
         </>
     );

@@ -1,19 +1,21 @@
 
 'use client'
 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Order } from "@/lib/types";
 import { format } from "date-fns";
-import { Printer } from "lucide-react";
+import { Printer, Trash2 } from "lucide-react";
 
 interface OrderReceiptDialogProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     order: Order | null;
+    onRefund: (orderId: number) => void;
 }
 
-export function OrderReceiptDialog({ isOpen, setIsOpen, order }: OrderReceiptDialogProps) {
+export function OrderReceiptDialog({ isOpen, setIsOpen, order, onRefund }: OrderReceiptDialogProps) {
     if (!order) return null;
 
     const subtotal = order.items.reduce((sum, item) => {
@@ -24,6 +26,11 @@ export function OrderReceiptDialog({ isOpen, setIsOpen, order }: OrderReceiptDia
 
     const handlePrint = () => {
         window.print();
+    }
+    
+    const handleRefund = () => {
+        onRefund(order.id);
+        setIsOpen(false);
     }
 
     return (
@@ -77,7 +84,26 @@ export function OrderReceiptDialog({ isOpen, setIsOpen, order }: OrderReceiptDia
                      )}
                 </div>
                 <DialogFooter className="sm:justify-between flex-row sm:flex-row-reverse">
-                    <Button onClick={handlePrint}><Printer className="mr-2" /> Print</Button>
+                    <div className="flex gap-2">
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive"><Trash2 className="mr-2" /> Refund</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Process Full Refund?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete order TIK-{order.id} from the system. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleRefund}>Yes, Refund</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        <Button onClick={handlePrint}><Printer className="mr-2" /> Print</Button>
+                    </div>
                     <DialogClose asChild>
                         <Button variant="ghost">Close</Button>
                     </DialogClose>
