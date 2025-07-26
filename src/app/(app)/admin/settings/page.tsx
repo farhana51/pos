@@ -149,55 +149,6 @@ function SettingsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Third-Party APIs</CardTitle>
-                        <CardDescription>Configure keys for external services.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                         <div>
-                            <h3 className="text-base font-medium">LocationIQ API</h3>
-                            <p className="text-sm text-muted-foreground mb-2">Used for address autocompletion in the delivery form.</p>
-                            <div className="space-y-2">
-                                <Label htmlFor="locationiq-api-key">API Key</Label>
-                                <Input
-                                    id="locationiq-api-key"
-                                    type="password"
-                                    placeholder="Enter your LocationIQ API Key"
-                                    value={locationIqApiKey}
-                                    onChange={(e) => setLocationIqApiKey(e.target.value)}
-                                />
-                            </div>
-                         </div>
-                         <Separator />
-                         <div>
-                             <h3 className="text-base font-medium">Online Ordering API</h3>
-                             <p className="text-sm text-muted-foreground mb-2">Used for fetching online orders from an external service.</p>
-                             <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="api-url">API URL</Label>
-                                    <Input
-                                        id="api-url"
-                                        placeholder="https://api.example.com/orders"
-                                        value={onlineOrderingApi.url}
-                                        onChange={(e) => handleApiSettingChange('url', e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="api-key">API Key</Label>
-                                    <Input
-                                        id="api-key"
-                                        type="password"
-                                        placeholder="Enter your API Key"
-                                        value={onlineOrderingApi.apiKey}
-                                        onChange={(e) => handleApiSettingChange('apiKey', e.target.value)}
-                                    />
-                                </div>
-                             </div>
-                         </div>
-                    </CardContent>
-                </Card>
-
                  <Card>
                     <CardHeader>
                         <CardTitle className="font-headline">Discount Settings</CardTitle>
