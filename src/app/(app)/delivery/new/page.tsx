@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,38 +10,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
-import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
-import { useDebounce } from "@/hooks/use-debounce";
-import { getMapboxSuggestions, getMapboxAddressDetails, MapboxSuggestion } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
-// Generates a unique session token for billing purposes
-const generateSessionToken = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = (Math.random() * 16) | 0,
-            v = c === 'x' ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-    });
-};
+interface MapboxAddress {
+    fullName: string;
+    coordinates: [number, number];
+    postcode: string;
+    place: string;
+    region: string;
+}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
+    const { toast } = useToast();
+
+    // Refs for map integration
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<any>(null); // Use any to avoid Mapbox type issues without npm package
+
+    // State for delivery details
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [addressSearch, setAddressSearch] = useState('');
-    const [postCode, setPostCode] = useState('');
-    const [flatNumber, setFlatNumber] = useState('');
-    const [houseNumber, setHouseNumber] = useState('');
-    const [roadName, setRoadName] = useState('');
-    const country = "United Kingdom";
-
-    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
-    const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState<MapboxAddress | null>(null);
+    
     const [apiKey, setApiKey] = useState<string | null>(null);
 
-    const sessionTokenRef = useRef<string | null>(null);
-    const debouncedSearchTerm = useDebounce(addressSearch, 300);
-
-    // Initialize API key and session token
+    // Fetch Mapbox API Key from localStorage
     useEffect(() => {
         const connections = localStorage.getItem('apiConnections');
         if (connections) {
@@ -49,224 +43,167 @@ function NewDeliveryOrderPage() {
             if(parsed.mapbox?.enabled && parsed.mapbox?.apiKey) {
                  setApiKey(parsed.mapbox.apiKey);
             }
-        } else {
-            console.warn("Mapbox API Key not found in settings.");
-        }
-        
-        if (!sessionTokenRef.current) {
-            sessionTokenRef.current = generateSessionToken();
         }
     }, []);
 
-    const fetchSuggestions = useCallback(async (query: string) => {
-        if (query.length < 3 || !apiKey || !sessionTokenRef.current) {
-            setSuggestions([]);
-            return;
-        }
-        try {
-            const data = await getMapboxSuggestions(query, apiKey, sessionTokenRef.current);
-            if (data && data.length > 0) {
-                setSuggestions(data);
-                setIsAddressPopoverOpen(true);
-            } else {
-                setSuggestions([]);
-            }
-        } catch (error) {
-            console.error("Failed to fetch address suggestions:", error);
-            setSuggestions([]);
-        }
-    }, [apiKey]);
-    
     useEffect(() => {
-        if (debouncedSearchTerm) {
-            fetchSuggestions(debouncedSearchTerm);
-        } else {
-            setSuggestions([]);
-            setIsAddressPopoverOpen(false);
-        }
-    }, [debouncedSearchTerm, fetchSuggestions]);
+        if (!apiKey) {
+            toast({
+                variant: "destructive",
+                title: "Mapbox Not Configured",
+                description: "Please set your Mapbox API key in Admin > Connections to enable delivery.",
+            })
+            return;
+        };
 
-    const handleSelectAddress = async (suggestion: MapboxSuggestion) => {
-        if (!apiKey || !sessionTokenRef.current) return;
-        
-        // Update input field immediately for better UX
-        setAddressSearch(suggestion.name); 
-        setSuggestions([]);
-        setIsAddressPopoverOpen(false);
+        // --- SCRIPT AND STYLESHEET LOADING ---
+        // Dynamically load external scripts and stylesheets to avoid build errors.
+        const mapboxCss = document.createElement('link');
+        mapboxCss.href = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css';
+        mapboxCss.rel = 'stylesheet';
+        document.head.appendChild(mapboxCss);
 
-        const details = await getMapboxAddressDetails(suggestion.mapbox_id, apiKey, sessionTokenRef.current);
-        
-        if (details) {
-            setAddressSearch(details.properties.full_address);
-            setRoadName(details.properties.street || '');
-            setHouseNumber(details.properties.house_number || '');
-            setPostCode(details.properties.postcode || '');
-            setFlatNumber(''); // Reset flat number
-        }
+        const geocoderCss = document.createElement('link');
+        geocoderCss.rel = 'stylesheet';
+        geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
+        geocoderCss.type = 'text/css';
+        document.head.appendChild(geocoderCss);
 
-        // A new session token should be generated after a retrieve call
-        sessionTokenRef.current = generateSessionToken();
-    }
+        const mapboxScript = document.createElement('script');
+        mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
+        mapboxScript.async = true;
+        document.body.appendChild(mapboxScript);
+
+        mapboxScript.onload = () => {
+            const geocoderScript = document.createElement('script');
+            geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
+            geocoderScript.async = true;
+            document.body.appendChild(geocoderScript);
+
+            geocoderScript.onload = () => {
+                if (mapRef.current) return;
+
+                (window as any).mapboxgl.accessToken = apiKey;
+
+                const map = new (window as any).mapboxgl.Map({
+                    container: mapContainerRef.current,
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [-0.127758, 51.507351], // Initial center: London
+                    zoom: 10
+                });
+                mapRef.current = map;
+
+                const geocoder = new (window as any).MapboxGeocoder({
+                    accessToken: (window as any).mapboxgl.accessToken,
+                    mapboxgl: (window as any).mapboxgl,
+                    marker: true,
+                    placeholder: 'Enter UK Postcode or Address',
+                    countries: 'GB',
+                    types: 'address,postcode,place'
+                });
+
+                map.addControl(geocoder, 'top-left');
+                map.addControl(new (window as any).mapboxgl.NavigationControl(), 'top-right');
+
+                geocoder.on('result', (e: any) => {
+                    const result = e.result;
+                    const addressDetails: MapboxAddress = {
+                        fullName: result.place_name,
+                        coordinates: result.geometry.coordinates,
+                        postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '',
+                        place: result.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
+                        region: result.context?.find((c: any) => c.id.startsWith('region'))?.text || '',
+                    };
+                    setSelectedAddress(addressDetails);
+                });
+            };
+        };
+
+        // Clean up on unmount
+        return () => {
+            mapRef.current?.remove();
+            document.head.removeChild(mapboxCss);
+            document.head.removeChild(geocoderCss);
+            document.body.removeChild(mapboxScript);
+            // The geocoder script will also be removed implicitly
+        };
+    }, [apiKey, toast]); 
 
     const handleCreateOrder = () => {
-        if (!customerName || !phoneNumber || !houseNumber || !roadName || !postCode) {
-            alert("Please fill in all required fields.");
+        if (!selectedAddress || !customerName || !phoneNumber) {
+            alert("Please select an address and fill in all customer details.");
             return;
         }
 
-        const addressParts = [
-            flatNumber,
-            houseNumber,
-            roadName,
-            postCode,
-            country
-        ].filter(Boolean); // Filter out empty parts
-        
-        const fullAddress = addressParts.join(', ');
-        
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: fullAddress,
+            address: selectedAddress.fullName,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
-    }
+    };
 
     return (
         <>
             <PageHeader title="New Delivery Order" />
-            <main className="p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-                <Card className="w-full max-w-lg">
-                    <CardHeader>
-                        <CardTitle>Customer & Delivery Details</CardTitle>
-                        <CardDescription>Enter the customer's information for this delivery order.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="customer-name">Customer Name</Label>
-                                <Input 
-                                    id="customer-name" 
-                                    placeholder="e.g. John Doe"
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="phone-number">Phone Number</Label>
-                                <Input 
-                                    id="phone-number" 
-                                    type="tel"
-                                    placeholder="e.g. 07123456789"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-4 pt-4 border-t">
-                            <Popover open={isAddressPopoverOpen} onOpenChange={setIsAddressPopoverOpen}>
-                                <PopoverAnchor asChild>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="address-search">Find Address</Label>
-                                        <Input
-                                            id="address-search"
-                                            placeholder="Start typing a UK Postcode or Address..."
-                                            value={addressSearch}
-                                            onChange={(e) => setAddressSearch(e.target.value)}
-                                            disabled={!apiKey}
-                                            autoComplete="off"
-                                        />
-                                        {!apiKey && <p className="text-xs text-destructive">Mapbox API Key not configured in Admin Connections.</p>}
+            <main className="grid md:grid-cols-3 gap-0 h-[calc(100vh-60px)]">
+                <div ref={mapContainerRef} className="md:col-span-2 h-full" />
+                <div className="md:col-span-1 p-4 sm:p-6 lg:p-8 flex items-center justify-center bg-muted/30">
+                     <Card className="w-full max-w-md shadow-2xl">
+                        <CardHeader>
+                            <CardTitle>Delivery Details</CardTitle>
+                            <CardDescription>
+                                {selectedAddress ? "Confirm the customer's information below." : "Search for an address using the search box on the map."}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {selectedAddress ? (
+                                <div className="space-y-4">
+                                     <div className="p-4 rounded-md border bg-background text-sm">
+                                        <p className="font-semibold">{selectedAddress.fullName}</p>
+                                        <p className="text-muted-foreground">{selectedAddress.place}, {selectedAddress.postcode}</p>
                                     </div>
-                                </PopoverAnchor>
-                                <PopoverContent className="w-[--radix-popover-anchor-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-                                    {suggestions.length > 0 ? (
-                                        <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
-                                            {suggestions.map(suggestion => (
-                                                <li 
-                                                    key={suggestion.mapbox_id} 
-                                                    className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
-                                                    onMouseDown={() => handleSelectAddress(suggestion)} // use onMouseDown to avoid focus issues
-                                                >
-                                                    <p className="font-semibold">{suggestion.name}</p>
-                                                    <p className="text-muted-foreground">{suggestion.address}</p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        (debouncedSearchTerm.length > 2) && <p className="p-4 text-sm text-muted-foreground">No suggestions found.</p>
-                                    )}
-                                </PopoverContent>
-                            </Popover>
-
-                            <p className="text-sm text-muted-foreground text-center">Or enter address manually</p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="flat-number">Flat Number (Optional)</Label>
-                                    <Input 
-                                        id="flat-number"
-                                        placeholder="e.g. Flat 21B"
-                                        value={flatNumber}
-                                        onChange={(e) => setFlatNumber(e.target.value)}
-                                    />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="customer-name">Customer Name</Label>
+                                        <Input 
+                                            id="customer-name" 
+                                            placeholder="e.g. John Doe"
+                                            value={customerName}
+                                            onChange={(e) => setCustomerName(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="phone-number">Phone Number</Label>
+                                        <Input 
+                                            id="phone-number" 
+                                            type="tel"
+                                            placeholder="e.g. 07123456789"
+                                            value={phoneNumber}
+                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                            required
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="house-number">House Name/Number</Label>
-                                    <Input 
-                                        id="house-number"
-                                        placeholder="e.g. 10"
-                                        value={houseNumber}
-                                        onChange={(e) => setHouseNumber(e.target.value)}
-                                        required
-                                    />
+                            ) : (
+                                 <div className="text-center text-muted-foreground py-8">
+                                    <p>Waiting for address selection...</p>
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="road-name">Road Name</Label>
-                                <Input 
-                                    id="road-name"
-                                    placeholder="e.g. Downing Street"
-                                    value={roadName}
-                                    onChange={(e) => setRoadName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="post-code">Post Code</Label>
-                                    <Input
-                                        id="post-code"
-                                        placeholder="e.g. SW1A 0AA"
-                                        value={postCode}
-                                        onChange={(e) => setPostCode(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="country">Country</Label>
-                                    <Input 
-                                        id="country"
-                                        value={country}
-                                        readOnly
-                                        className="bg-muted"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button className="w-full" onClick={handleCreateOrder} disabled={!customerName || !phoneNumber || !houseNumber || !roadName || !postCode}>
-                            Create Order
-                        </Button>
-                    </CardFooter>
-                </Card>
+                            )}
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={handleCreateOrder} disabled={!selectedAddress || !customerName || !phoneNumber}>
+                                Create Order
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
             </main>
         </>
-    )
+    );
 }
 
-export default withAuth(NewDeliveryOrderPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole]);
+export default withAuth(NewDeliveryOrderPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole], 'delivery');
+
+    
