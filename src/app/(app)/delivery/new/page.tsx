@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,16 @@ import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
-import { getMapboxSuggestions, MapboxSuggestion } from "@/lib/api";
+import { getMapboxSuggestions, getMapboxAddressDetails, MapboxSuggestion } from "@/lib/api";
+
+// Generates a unique session token for billing purposes
+const generateSessionToken = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = (Math.random() * 16) | 0,
+            v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+};
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -29,8 +38,10 @@ function NewDeliveryOrderPage() {
     const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
     const [apiKey, setApiKey] = useState<string | null>(null);
 
+    const sessionTokenRef = useRef<string | null>(null);
     const debouncedSearchTerm = useDebounce(addressSearch, 300);
 
+    // Initialize API key and session token
     useEffect(() => {
         const connections = localStorage.getItem('apiConnections');
         if (connections) {
@@ -41,15 +52,19 @@ function NewDeliveryOrderPage() {
         } else {
             console.warn("Mapbox API Key not found in settings.");
         }
+        
+        if (!sessionTokenRef.current) {
+            sessionTokenRef.current = generateSessionToken();
+        }
     }, []);
 
     const fetchSuggestions = useCallback(async (query: string) => {
-        if (query.length < 3 || !apiKey) {
+        if (query.length < 3 || !apiKey || !sessionTokenRef.current) {
             setSuggestions([]);
             return;
         }
         try {
-            const data = await getMapboxSuggestions(query, apiKey);
+            const data = await getMapboxSuggestions(query, apiKey, sessionTokenRef.current);
             if (data && data.length > 0) {
                 setSuggestions(data);
                 setIsAddressPopoverOpen(true);
@@ -71,13 +86,26 @@ function NewDeliveryOrderPage() {
         }
     }, [debouncedSearchTerm, fetchSuggestions]);
 
-    const handleSelectAddress = (address: MapboxSuggestion) => {
-        setAddressSearch(address.place_name);
-        setRoadName(address.context.find(c => c.id.startsWith('street'))?.text || address.context.find(c => c.id.startsWith('locality'))?.text || '');
-        setHouseNumber(address.address || '');
-        setPostCode(address.context.find(c => c.id.startsWith('postcode'))?.text || '');
-        setFlatNumber(''); // Reset flat number as it's not provided by this API
+    const handleSelectAddress = async (suggestion: MapboxSuggestion) => {
+        if (!apiKey || !sessionTokenRef.current) return;
+        
+        // Update input field immediately for better UX
+        setAddressSearch(suggestion.name); 
+        setSuggestions([]);
         setIsAddressPopoverOpen(false);
+
+        const details = await getMapboxAddressDetails(suggestion.mapbox_id, apiKey, sessionTokenRef.current);
+        
+        if (details) {
+            setAddressSearch(details.properties.full_address);
+            setRoadName(details.properties.street || '');
+            setHouseNumber(details.properties.house_number || '');
+            setPostCode(details.properties.postcode || '');
+            setFlatNumber(''); // Reset flat number
+        }
+
+        // A new session token should be generated after a retrieve call
+        sessionTokenRef.current = generateSessionToken();
     }
 
     const handleCreateOrder = () => {
@@ -145,10 +173,11 @@ function NewDeliveryOrderPage() {
                                         <Label htmlFor="address-search">Find Address</Label>
                                         <Input
                                             id="address-search"
-                                            placeholder="Enter UK Postcode and House Number"
+                                            placeholder="Start typing a UK Postcode or Address..."
                                             value={addressSearch}
                                             onChange={(e) => setAddressSearch(e.target.value)}
                                             disabled={!apiKey}
+                                            autoComplete="off"
                                         />
                                         {!apiKey && <p className="text-xs text-destructive">Mapbox API Key not configured in Admin Connections.</p>}
                                     </div>
@@ -156,13 +185,14 @@ function NewDeliveryOrderPage() {
                                 <PopoverContent className="w-[--radix-popover-anchor-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
                                     {suggestions.length > 0 ? (
                                         <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
-                                            {suggestions.map(addr => (
+                                            {suggestions.map(suggestion => (
                                                 <li 
-                                                    key={addr.id} 
+                                                    key={suggestion.mapbox_id} 
                                                     className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
-                                                    onMouseDown={() => handleSelectAddress(addr)} // use onMouseDown to avoid focus issues
+                                                    onMouseDown={() => handleSelectAddress(suggestion)} // use onMouseDown to avoid focus issues
                                                 >
-                                                    {addr.place_name}
+                                                    <p className="font-semibold">{suggestion.name}</p>
+                                                    <p className="text-muted-foreground">{suggestion.address}</p>
                                                 </li>
                                             ))}
                                         </ul>
