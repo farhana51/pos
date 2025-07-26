@@ -12,24 +12,34 @@ export let mockTeam: TeamMember[] = [
 
 // --- Authentication and State Management (for demo purposes) ---
 
-/**
- * In a real app, this would be managed via a proper state management solution (Context, Redux, etc.)
- * and the user object would be fetched from a secure API endpoint.
- * We are using a simple mutable object and localStorage here to simulate a logged-in session.
- */
-export let mockUser: User = {
-    id: mockTeam[0].id,
-    userId: mockTeam[0].userId,
-    name: mockTeam[0].name,
-    role: mockTeam[0].role,
-    avatarUrl: mockTeam[0].avatarUrl,
-}; // Default to admin for initial load
+// This object is intentionally mutable for demo purposes.
+export let mockUser: User = { id: 0, userId: '', name: '', role: 'Basic', avatarUrl: '' };
 
-if (typeof window !== 'undefined') {
+const initializeUser = (): User => {
+    if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            return JSON.parse(storedUser);
+        }
+    }
+    // Default to a logged-out state or a default user if no one is logged in
+    return { id: 1, userId: 'admin', password: 'admin', name: 'Alexandre', role: 'Admin', email: 'alex@example.com', avatarUrl: 'https://placehold.co/100x100.png' };
+};
+
+// Initialize user on script load
+mockUser = initializeUser();
+
+
+export const getCurrentUser = (): User => {
+  // In a real app, this would read from a secure source like HttpOnly cookies or a state manager.
+  // For this demo, we'll read from localStorage first, then the mutable mockUser.
+  if (typeof window !== 'undefined') {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-        mockUser = JSON.parse(storedUser);
+      return JSON.parse(storedUser);
     }
+  }
+  return mockUser;
 }
 
 export const findUserByCredentials = (id: string, pass: string): User | undefined => {
@@ -50,6 +60,7 @@ export const setCurrentUser = (user: User) => {
   mockUser = user;
   if (typeof window !== 'undefined') {
       localStorage.setItem('currentUser', JSON.stringify(user));
+      window.dispatchEvent(new Event('storage')); // Notify other tabs
   }
 };
 
@@ -57,8 +68,12 @@ export const logoutUser = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('currentUser');
     }
-    // Set a default user so the app doesn't crash on logout
-    mockUser = { id: 0, userId: '', name: 'Guest', role: 'Basic', avatarUrl: '' }; 
+    // Set a default/empty user so the app doesn't crash on logout
+    const loggedOutUser = { id: 0, userId: '', name: 'Guest', role: 'Basic', avatarUrl: '' }; 
+    mockUser = loggedOutUser;
+     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+    }
 }
 
 /**
@@ -66,8 +81,9 @@ export const logoutUser = () => {
  * In a real app, roles would be part of the user object from the database.
  */
 export const setUserRole = (role: UserRole) => {
-  const currentUser = { ...mockUser, role };
-  setCurrentUser(currentUser);
+  const currentUser = getCurrentUser();
+  const updatedUser = { ...currentUser, role };
+  setCurrentUser(updatedUser);
 };
 
 /**

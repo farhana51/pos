@@ -8,31 +8,40 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera } from "lucide-react";
-import { findUserByCredentials, setCurrentUser } from "@/lib/data";
-import { useToast } from "@/hooks/use-toast";
+import { Camera, Utensils } from "lucide-react";
+import { findUserByCredentials, setCurrentUser, getCurrentUser } from "@/lib/data";
 
 export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Set the initial time on the client to avoid hydration mismatch
+        // Prevent hydration mismatch by only running client-side
         setCurrentDateTime(new Date());
         
         const timer = setInterval(() => {
             setCurrentDateTime(new Date());
         }, 1000 * 60); // Update every minute is enough since seconds are not displayed
+
+        // Check if user is already logged in
+        const user = getCurrentUser();
+        if(user && user.userId) {
+            router.replace('/landing');
+        } else {
+            setIsLoading(false);
+        }
+
         return () => clearInterval(timer);
-    }, []);
+    }, [router]);
 
     const handleLogin = () => {
         const user = findUserByCredentials(email, password);
         if (user) {
             setCurrentUser(user);
-            router.push('/landing');
+            router.replace('/landing');
         } else {
             // In a real app, you might show an error message
             console.error("Login failed");
@@ -44,6 +53,15 @@ export default function LoginPage() {
             handleLogin();
         }
     }
+
+    if (isLoading) {
+       return (
+            <div className="flex items-center justify-center h-screen">
+                <Utensils className="h-12 w-12 text-primary animate-spin" />
+            </div>
+        );
+    }
+
 
   return (
     <main className="flex min-h-screen w-full">

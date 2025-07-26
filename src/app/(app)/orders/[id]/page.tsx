@@ -34,7 +34,7 @@ const getOrderById = (id: number): Order | undefined => {
     return mockOrders.find(o => o.id === id);
 }
 
-function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (item: OrderItem) => void; orderId: number, triggerElement: MenuItem | null }) {
+function AddItemDialog({ onAddItem, orderId, triggerElement, setTriggerElement }: { onAddItem: (item: OrderItem) => void; orderId: number, triggerElement: MenuItem | null, setTriggerElement: (item: MenuItem | null) => void }) {
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [notes, setNotes] = useState('');
   const [open, setOpen] = useState(false);
@@ -53,6 +53,7 @@ function AddItemDialog({ onAddItem, orderId, triggerElement }: { onAddItem: (ite
     if(!isOpen) {
       setSelectedAddons([]);
       setNotes('');
+      setTriggerElement(null); // Reset the trigger in parent
     }
     setOpen(isOpen);
   }
@@ -733,6 +734,7 @@ function NewOrderPage() {
                         onAddItem={handleAddItem}
                         orderId={0} // New order doesn't have an ID yet
                         triggerElement={itemToCustomize}
+                        setTriggerElement={setItemToCustomize}
                     />
                  )}
             </main>
@@ -957,6 +959,7 @@ function ExistingOrderPage({ order: initialOrder }: { order: Order }) {
                 onAddItem={handleAddItem}
                 orderId={order.id}
                 triggerElement={itemToCustomize}
+                setTriggerElement={setItemToCustomize}
             />
           )}
       </main>
