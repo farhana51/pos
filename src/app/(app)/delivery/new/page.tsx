@@ -12,18 +12,7 @@ import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
-
-interface LocationIQAddress {
-    place_id: string;
-    display_name: string;
-    address: {
-        name?: string;
-        house_number?: string;
-        road?: string;
-        postcode?: string;
-        country?: string;
-    }
-}
+import { getMapboxSuggestions, MapboxSuggestion } from "@/lib/api";
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -36,18 +25,22 @@ function NewDeliveryOrderPage() {
     const [roadName, setRoadName] = useState('');
     const country = "United Kingdom";
 
-    const [suggestions, setSuggestions] = useState<LocationIQAddress[]>([]);
+    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
     const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
     const [apiKey, setApiKey] = useState<string | null>(null);
 
     const debouncedSearchTerm = useDebounce(addressSearch, 300);
 
     useEffect(() => {
-        const key = localStorage.getItem('locationIqApiKey');
-        if (key) {
-            setApiKey(key);
+        // In a real app, this might come from a config file or context
+        const connections = localStorage.getItem('apiConnections');
+        if (connections) {
+            const parsed = JSON.parse(connections);
+            if(parsed.mapbox?.enabled && parsed.mapbox?.apiKey) {
+                 setApiKey(parsed.mapbox.apiKey);
+            }
         } else {
-            console.warn("LocationIQ API Key not found in settings.");
+            console.warn("Mapbox API Key not found in settings.");
         }
     }, []);
 
@@ -57,9 +50,8 @@ function NewDeliveryOrderPage() {
             return;
         }
         try {
-            const response = await fetch(`https://api.locationiq.com/v1/autocomplete?key=${apiKey}&q=${encodeURIComponent(query)}&countrycodes=gb&limit=5&normalizeaddress=1`);
-            const data = await response.json();
-            if (data && !data.error) {
+            const data = await getMapboxSuggestions(query, apiKey);
+            if (data && data.length > 0) {
                 setSuggestions(data);
                 setIsAddressPopoverOpen(true);
             } else {
@@ -80,11 +72,11 @@ function NewDeliveryOrderPage() {
         }
     }, [debouncedSearchTerm, fetchSuggestions]);
 
-    const handleSelectAddress = (address: LocationIQAddress) => {
-        setAddressSearch(address.display_name);
-        setRoadName(address.address.road || '');
-        setHouseNumber(address.address.house_number || address.address.name || '');
-        setPostCode(address.address.postcode || '');
+    const handleSelectAddress = (address: MapboxSuggestion) => {
+        setAddressSearch(address.place_name);
+        setRoadName(address.context.find(c => c.id.startsWith('street'))?.text || address.context.find(c => c.id.startsWith('locality'))?.text || '');
+        setHouseNumber(address.address || '');
+        setPostCode(address.context.find(c => c.id.startsWith('postcode'))?.text || '');
         setFlatNumber(''); // Reset flat number as it's not provided by this API
         setIsAddressPopoverOpen(false);
     }
@@ -159,7 +151,7 @@ function NewDeliveryOrderPage() {
                                             onChange={(e) => setAddressSearch(e.target.value)}
                                             disabled={!apiKey}
                                         />
-                                        {!apiKey && <p className="text-xs text-destructive">LocationIQ API Key not configured in Admin Settings.</p>}
+                                        {!apiKey && <p className="text-xs text-destructive">Mapbox API Key not configured in Admin Connections.</p>}
                                     </div>
                                 </PopoverAnchor>
                                 <PopoverContent className="w-[--radix-popover-anchor-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -167,11 +159,11 @@ function NewDeliveryOrderPage() {
                                         <ul className="space-y-1 py-1 max-h-60 overflow-y-auto">
                                             {suggestions.map(addr => (
                                                 <li 
-                                                    key={addr.place_id} 
+                                                    key={addr.id} 
                                                     className="px-4 py-2 text-sm hover:bg-accent cursor-pointer"
                                                     onMouseDown={() => handleSelectAddress(addr)} // use onMouseDown to avoid focus issues
                                                 >
-                                                    {addr.display_name}
+                                                    {addr.place_name}
                                                 </li>
                                             ))}
                                         </ul>

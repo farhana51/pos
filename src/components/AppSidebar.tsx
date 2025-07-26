@@ -4,7 +4,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe, BarChart, Radio, ListOrdered } from "lucide-react"
+import { BarChart2, BookOpen, Calendar, LayoutDashboard, LogOut, Settings, Utensils, Users, UserCheck, Package, Contact, Monitor, Home, Car, Globe, BarChart, Radio, ListOrdered, Plug } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +36,7 @@ const allMenuItems = [
   { href: "/team", label: "Staff List", icon: Users, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/inventory", label: "Inventory", icon: Package, requiredRoles: ['Admin', 'Advanced'] as UserRole[], setting: "inventory" },
   { href: "/admin/reports", label: "Reports", icon: BarChart2, requiredRoles: ['Admin'] as UserRole[] },
+  { href: "/admin/connections", label: "Connections", icon: Plug, requiredRoles: ['Admin'] as UserRole[] },
   { href: "/admin/settings", label: "Settings", icon: Settings, requiredRoles: ['Admin'] as UserRole[] },
 ];
 

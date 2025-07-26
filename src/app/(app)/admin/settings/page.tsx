@@ -4,17 +4,14 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import withAuth from "@/components/withAuth";
 import { useToast } from "@/hooks/use-toast";
-import { mockTables } from "@/lib/data";
 import { UserRole } from "@/lib/types";
-import { FilePlus2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
 
 function SettingRow({ id, title, description, isChecked, onCheckedChange }: { id: string, title:string, description: string, isChecked: boolean, onCheckedChange: (checked: boolean) => void }) {
     return (
@@ -51,8 +48,6 @@ function SettingsPage() {
         enabled: true,
         type: 'percentage' as 'percentage' | 'amount',
     });
-
-    const [locationIqApiKey, setLocationIqApiKey] = useState('');
     
     useEffect(() => {
         const savedSettings = localStorage.getItem('appSettings');
@@ -63,14 +58,7 @@ function SettingsPage() {
         if (savedDiscountSettings) {
             setDiscountSettings(JSON.parse(savedDiscountSettings));
         }
-         const savedLocationIqKey = localStorage.getItem('locationIqApiKey');
-        if (savedLocationIqKey) {
-            setLocationIqApiKey(savedLocationIqKey);
-        }
     }, []);
-
-
-    const [printerIps, setPrinterIps] = useState<string[]>(['192.168.1.101', '', '', '', '']);
 
     const handleSettingChange = (key: keyof typeof settings) => (value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -80,18 +68,11 @@ function SettingsPage() {
         setDiscountSettings(prev => ({...prev, [key]: value}));
     }
 
-    const handlePrinterIpChange = (index: number, value: string) => {
-        const newIps = [...printerIps];
-        newIps[index] = value;
-        setPrinterIps(newIps);
-    }
-
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps, discountSettings, locationIqApiKey });
+        console.log("Saving settings:", { settings, discountSettings });
         localStorage.setItem('appSettings', JSON.stringify(settings));
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
-        localStorage.setItem('locationIqApiKey', locationIqApiKey);
         window.dispatchEvent(new Event('storage')); // Notify other components of changes
         toast({
             title: "Settings Saved",
@@ -132,7 +113,20 @@ function SettingsPage() {
                         <SettingRow id="suppliers" title="Suppliers & Purchase Orders" description="Manage suppliers and purchase orders." isChecked={settings.suppliers} onCheckedChange={handleSettingChange('suppliers')} />
                     </CardContent>
                 </Card>
+            </div>
 
+            <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Hardware</CardTitle>
+                        <CardDescription>Configure connected hardware like displays and printers.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <SettingRow id="customer-display" title="Customer Facing Display" description="Show order details to customers at the counter." isChecked={settings.customerDisplay} onCheckedChange={handleSettingChange('customerDisplay')} />
+                        <SettingRow id="kitchen-display" title="Kitchen Display System" description="Send orders to a screen instead of printing." isChecked={settings.kitchenDisplay} onCheckedChange={handleSettingChange('kitchenDisplay')} />
+                        <SettingRow id="label-printer" title="Label Printer" description="Enable printing for order labels." isChecked={settings.labelPrinter} onCheckedChange={handleSettingChange('labelPrinter')} />
+                    </CardContent>
+                </Card>
                  <Card>
                     <CardHeader>
                         <CardTitle className="font-headline">Discount Settings</CardTitle>
@@ -167,49 +161,6 @@ function SettingsPage() {
                                 </div>
                             </>
                         )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Hardware & Integrations</CardTitle>
-                        <CardDescription>Configure connected hardware and third-party API keys.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-4">
-                            <Label>Kitchen Printers</Label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {printerIps.map((ip, i) => (
-                                    <Input 
-                                        key={i} 
-                                        type="text" 
-                                        placeholder={`Printer ${i + 1} IP`} 
-                                        value={ip}
-                                        onChange={(e) => handlePrinterIpChange(i, e.target.value)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                        <Separator />
-                        <SettingRow id="customer-display" title="Customer Facing Display" description="Show order details to customers at the counter." isChecked={settings.customerDisplay} onCheckedChange={handleSettingChange('customerDisplay')} />
-                        <SettingRow id="kitchen-display" title="Kitchen Display System" description="Send orders to a screen instead of printing." isChecked={settings.kitchenDisplay} onCheckedChange={handleSettingChange('kitchenDisplay')} />
-                        <SettingRow id="label-printer" title="Label Printer" description="Enable printing for order labels." isChecked={settings.labelPrinter} onCheckedChange={handleSettingChange('labelPrinter')} />
-                         <Separator />
-                        <div className="space-y-2">
-                            <Label htmlFor="locationiq-key">LocationIQ API Key</Label>
-                            <Input 
-                                id="locationiq-key"
-                                type="text"
-                                placeholder="pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                value={locationIqApiKey}
-                                onChange={(e) => setLocationIqApiKey(e.target.value)}
-                            />
-                             <p className="text-xs text-muted-foreground">
-                                Used for address autocompletion in the delivery form.
-                            </p>
-                        </div>
                     </CardContent>
                 </Card>
             </div>
