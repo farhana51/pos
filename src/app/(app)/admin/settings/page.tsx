@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { PageHeader } from "@/components/PageHeader";
@@ -53,11 +52,6 @@ function SettingsPage() {
         type: 'percentage' as 'percentage' | 'amount',
     });
 
-    const [onlineOrderingApi, setOnlineOrderingApi] = useState({
-        url: '',
-        apiKey: '',
-    });
-
     const [locationIqApiKey, setLocationIqApiKey] = useState('');
     
     useEffect(() => {
@@ -68,10 +62,6 @@ function SettingsPage() {
         const savedDiscountSettings = localStorage.getItem('discountSettings');
         if (savedDiscountSettings) {
             setDiscountSettings(JSON.parse(savedDiscountSettings));
-        }
-        const savedApiSettings = localStorage.getItem('onlineOrderingApi');
-        if (savedApiSettings) {
-            setOnlineOrderingApi(JSON.parse(savedApiSettings));
         }
          const savedLocationIqKey = localStorage.getItem('locationIqApiKey');
         if (savedLocationIqKey) {
@@ -90,11 +80,6 @@ function SettingsPage() {
         setDiscountSettings(prev => ({...prev, [key]: value}));
     }
 
-     const handleApiSettingChange = (key: keyof typeof onlineOrderingApi, value: string) => {
-        setOnlineOrderingApi(prev => ({...prev, [key]: value}));
-    }
-
-
     const handlePrinterIpChange = (index: number, value: string) => {
         const newIps = [...printerIps];
         newIps[index] = value;
@@ -103,10 +88,9 @@ function SettingsPage() {
 
     const handleSaveChanges = () => {
         // Here you would typically send the settings to your backend
-        console.log("Saving settings:", { settings, printerIps, discountSettings, onlineOrderingApi, locationIqApiKey });
+        console.log("Saving settings:", { settings, printerIps, discountSettings, locationIqApiKey });
         localStorage.setItem('appSettings', JSON.stringify(settings));
         localStorage.setItem('discountSettings', JSON.stringify(discountSettings));
-        localStorage.setItem('onlineOrderingApi', JSON.stringify(onlineOrderingApi));
         localStorage.setItem('locationIqApiKey', locationIqApiKey);
         window.dispatchEvent(new Event('storage')); // Notify other components of changes
         toast({
@@ -190,8 +174,8 @@ function SettingsPage() {
             <div className="space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Hardware</CardTitle>
-                        <CardDescription>Configure connected hardware like printers and displays.</CardDescription>
+                        <CardTitle className="font-headline">Hardware & Integrations</CardTitle>
+                        <CardDescription>Configure connected hardware and third-party API keys.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-4">
@@ -212,6 +196,20 @@ function SettingsPage() {
                         <SettingRow id="customer-display" title="Customer Facing Display" description="Show order details to customers at the counter." isChecked={settings.customerDisplay} onCheckedChange={handleSettingChange('customerDisplay')} />
                         <SettingRow id="kitchen-display" title="Kitchen Display System" description="Send orders to a screen instead of printing." isChecked={settings.kitchenDisplay} onCheckedChange={handleSettingChange('kitchenDisplay')} />
                         <SettingRow id="label-printer" title="Label Printer" description="Enable printing for order labels." isChecked={settings.labelPrinter} onCheckedChange={handleSettingChange('labelPrinter')} />
+                         <Separator />
+                        <div className="space-y-2">
+                            <Label htmlFor="locationiq-key">LocationIQ API Key</Label>
+                            <Input 
+                                id="locationiq-key"
+                                type="text"
+                                placeholder="pk.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                value={locationIqApiKey}
+                                onChange={(e) => setLocationIqApiKey(e.target.value)}
+                            />
+                             <p className="text-xs text-muted-foreground">
+                                Used for address autocompletion in the delivery form.
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
