@@ -32,7 +32,6 @@ function NewDeliveryOrderPage() {
     const debouncedSearchTerm = useDebounce(addressSearch, 300);
 
     useEffect(() => {
-        // In a real app, this might come from a config file or context
         const connections = localStorage.getItem('apiConnections');
         if (connections) {
             const parsed = JSON.parse(connections);
@@ -146,7 +145,7 @@ function NewDeliveryOrderPage() {
                                         <Label htmlFor="address-search">Find Address</Label>
                                         <Input
                                             id="address-search"
-                                            placeholder="Start typing an address or postcode..."
+                                            placeholder="Enter UK Postcode and House Number"
                                             value={addressSearch}
                                             onChange={(e) => setAddressSearch(e.target.value)}
                                             disabled={!apiKey}

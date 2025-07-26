@@ -18,9 +18,16 @@ export interface MapboxSuggestion {
  * @returns A promise that resolves to an array of suggestions.
  */
 export const getMapboxSuggestions = async (query: string, apiKey: string): Promise<MapboxSuggestion[]> => {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?country=gb&access_token=${apiKey}&autocomplete=true`;
+    const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`;
+    const params = new URLSearchParams({
+        access_token: apiKey,
+        country: 'GB',
+        types: 'address,postcode',
+        autocomplete: 'true'
+    });
+
     try {
-        const response = await fetch(url);
+        const response = await fetch(`${endpoint}?${params}`);
         if (!response.ok) {
             throw new Error(`Mapbox API error: ${response.statusText}`);
         }
