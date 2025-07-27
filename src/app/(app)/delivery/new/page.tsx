@@ -20,6 +20,7 @@ function NewDeliveryOrderPage() {
 
     // Mapbox Config State
     const [mapboxConfig, setMapboxConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
     // Form State
     const [customerName, setCustomerName] = useState('');
@@ -40,6 +41,7 @@ function NewDeliveryOrderPage() {
         } else {
             setMapboxConfig({ enabled: false, apiKey: '' });
         }
+        setIsLoadingConfig(false);
     }, []);
 
     const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +70,7 @@ function NewDeliveryOrderPage() {
             return;
         }
         
-        const fullAddress = [address.houseNumber, address.flatNumber, address.roadName, address.city, address.postcode, address.country].filter(Boolean).join(', ');
+        const fullAddress = [address.flatNumber, address.houseNumber, address.roadName, address.city, address.postcode, address.country].filter(Boolean).join(', ');
         
         const params = new URLSearchParams({
             customerName: customerName,
@@ -118,17 +120,19 @@ function NewDeliveryOrderPage() {
                         </div>
 
                         <div className="space-y-4 border-t-2 border-black pt-6">
-                             {mapboxConfig === null ? (
+                             {isLoadingConfig ? (
                                 <div className="space-y-2">
                                     <Skeleton className="h-8 w-1/3" />
                                     <Skeleton className="h-10 w-full" />
                                 </div>
-                             ) : mapboxConfig.enabled && mapboxConfig.apiKey ? (
+                             ) : mapboxConfig?.enabled ? (
                                 <div className="space-y-2">
                                     <Label>Find Address</Label>
                                     <AddressSearch apiKey={mapboxConfig.apiKey} onAddressSelect={handleAddressSelect} />
                                 </div>
-                            ) : null}
+                            ) : (
+                                <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md text-center">Autocomplete Disabled. Please enable the Mapbox Autocomplete feature in Admin > Connections.</p>
+                            )}
 
 
                             <div className="grid grid-cols-2 gap-4">

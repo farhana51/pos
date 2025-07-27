@@ -32,11 +32,12 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         // --- SCRIPT AND STYLESHEET LOADING ---
         const loadScript = (id: string, src: string, onLoad: () => void) => {
             if (document.getElementById(id)) {
+                // If script tag exists but objects not on window, wait a bit
                 if (window.mapboxgl && window.MapboxGeocoder) {
                     onLoad();
                 } else {
-                     // If script tag exists but objects not on window, wait a bit
-                    setTimeout(onLoad, 500);
+                    const timeout = setTimeout(onLoad, 500);
+                    return () => clearTimeout(timeout);
                 }
                 return;
             }
@@ -53,8 +54,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         };
 
         try {
-            console.log("Starting script loading process...");
-            
             // Load Mapbox Geocoder CSS
             if (!document.getElementById('mapbox-geocoder-css')) {
                 const geocoderCss = document.createElement('link');
@@ -66,9 +65,8 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
 
             // Load Mapbox GL JS, then the Geocoder JS
             loadScript('mapbox-gl-js', 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js', () => {
-                console.log("Mapbox GL JS loaded.");
                 loadScript('mapbox-geocoder-js', 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js', () => {
-                    console.log("Mapbox Geocoder JS loaded.");
+                    if (geocoderRef.current) return;
                     
                     if (!window.mapboxgl || !window.MapboxGeocoder) {
                         console.error("Mapbox libraries not available on the window object.");
@@ -76,9 +74,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         return;
                     }
                     
-                    if (geocoderRef.current) return;
-
-                    console.log("Initializing Mapbox Geocoder...");
                     window.mapboxgl.accessToken = apiKey;
                     
                     const geocoder = new window.MapboxGeocoder({
@@ -93,7 +88,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         geocoderContainerRef.current.innerHTML = ''; 
                         geocoderContainerRef.current.appendChild(geocoder.onAdd());
                         setLoadStatus('loaded');
-                        console.log("Geocoder successfully initialized and attached to DOM.");
                     }
                     
                     geocoderRef.current = geocoder;
@@ -128,8 +122,8 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         <div>
             <div ref={geocoderContainerRef} style={{ display: loadStatus === 'loaded' ? 'block' : 'none' }} />
             {loadStatus === 'loading' && <p className="text-sm text-muted-foreground">Loading address search...</p>}
-            {loadStatus === 'disabled' && <p className="text-sm text-yellow-500">Autocomplete disabled. Please provide an API key.</p>}
-            {loadStatus === 'error' && <p className="text-sm text-destructive">Error loading address search. Check the console and API key.</p>}
+            {loadStatus === 'disabled' && <p className="text-sm text-yellow-500">Autocomplete disabled. Please provide a valid API key.</p>}
+            {loadStatus === 'error' && <p className="text-sm text-destructive">Error loading address search. Check console for details (F12). The API key might be invalid or restricted.</p>}
         </div>
     );
 };
