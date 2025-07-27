@@ -19,7 +19,11 @@ const initialConnectionsState = {
         apiKey: '',
         apiUrl: ''
     },
-    mapbox: {
+    mapboxAutocomplete: {
+        enabled: false,
+        apiKey: ''
+    },
+    mapboxDeliveryZone: {
         enabled: false,
         apiKey: ''
     },
@@ -105,24 +109,51 @@ function ConnectionsPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="font-headline">Mapbox</CardTitle>
-                                <CardDescription>For address lookup and delivery route optimization.</CardDescription>
+                                <CardTitle className="font-headline">Mapbox Address Autocomplete</CardTitle>
+                                <CardDescription>For automatic address lookup when creating delivery orders.</CardDescription>
                             </div>
                             <Switch
-                                checked={connections.mapbox.enabled}
-                                onCheckedChange={(val) => handleInputChange('mapbox', 'enabled', val)}
+                                checked={connections.mapboxAutocomplete.enabled}
+                                onCheckedChange={(val) => handleInputChange('mapboxAutocomplete', 'enabled', val)}
                             />
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="mapbox-apikey">Public Access Token</Label>
+                            <Label htmlFor="mapbox-apikey">Public Access Token (pk...)</Label>
                             <Input
                                 id="mapbox-apikey"
                                 placeholder="pk.ey..."
-                                value={connections.mapbox.apiKey}
-                                onChange={(e) => handleInputChange('mapbox', 'apiKey', e.target.value)}
-                                disabled={!connections.mapbox.enabled}
+                                value={connections.mapboxAutocomplete.apiKey}
+                                onChange={(e) => handleInputChange('mapboxAutocomplete', 'apiKey', e.target.value)}
+                                disabled={!connections.mapboxAutocomplete.enabled}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                 <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="font-headline">Mapbox Delivery Zone API</CardTitle>
+                                <CardDescription>For validating if an address falls within a delivery zone.</CardDescription>
+                            </div>
+                            <Switch
+                                checked={connections.mapboxDeliveryZone.enabled}
+                                onCheckedChange={(val) => handleInputChange('mapboxDeliveryZone', 'enabled', val)}
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="mapbox-delivery-apikey">Secret Access Token (sk...)</Label>
+                            <Input
+                                id="mapbox-delivery-apikey"
+                                placeholder="sk.ey..."
+                                value={connections.mapboxDeliveryZone.apiKey}
+                                onChange={(e) => handleInputChange('mapboxDeliveryZone', 'apiKey', e.target.value)}
+                                disabled={!connections.mapboxDeliveryZone.enabled}
                             />
                         </div>
                     </CardContent>
@@ -159,4 +190,4 @@ function ConnectionsPage() {
     );
 }
 
-export default withAuth(ConnectionsPage, ['Admin' as UserRole]);
+export default withAuth(ConnectionsPage, ['Admin'as UserRole]);

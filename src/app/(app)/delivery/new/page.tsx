@@ -27,14 +27,18 @@ function NewDeliveryOrderPage() {
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [addressLine1, setAddressLine1] = useState('');
+    const [city, setCity] = useState('');
+    const [postcode, setPostcode] = useState('');
+    const [fullAddress, setFullAddress] = useState('');
     
     // Geocoder State
     const geocoderContainerRef = useRef<HTMLDivElement>(null);
     const geocoderRef = useRef<any>(null);
-    const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
 
     // API Key State
     const [apiKey, setApiKey] = useState<string | null>(null);
+    const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
     const [scriptsLoaded, setScriptsLoaded] = useState(false);
 
 
@@ -43,15 +47,19 @@ function NewDeliveryOrderPage() {
         const connections = localStorage.getItem('apiConnections');
         if (connections) {
             const parsed = JSON.parse(connections);
-            if(parsed.mapbox?.enabled && parsed.mapbox?.apiKey) {
-                 setApiKey(parsed.mapbox.apiKey);
+            if(parsed.mapboxAutocomplete?.enabled && parsed.mapboxAutocomplete?.apiKey) {
+                 setApiKey(parsed.mapboxAutocomplete.apiKey);
+                 setIsAutocompleteEnabled(true);
+            } else {
+                 setIsAutocompleteEnabled(false);
             }
         }
     }, []);
 
-    // Effect to load Mapbox scripts
+    // Effect to load Mapbox scripts if enabled
     useEffect(() => {
-        // --- SCRIPT AND STYLESHEET LOADING ---
+        if (!isAutocompleteEnabled) return;
+
         const geocoderCss = document.createElement('link');
         geocoderCss.rel = 'stylesheet';
         geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
@@ -74,11 +82,10 @@ function NewDeliveryOrderPage() {
             };
         };
         
-        // Clean up function to remove scripts if component unmounts
         return () => {
-            // Find and remove the elements if they exist
+             // Clean up on component unmount
         };
-    }, []);
+    }, [isAutocompleteEnabled]);
     
     // Effect to initialize the geocoder once scripts are loaded and we have an API key
     useEffect(() => {
@@ -99,7 +106,6 @@ function NewDeliveryOrderPage() {
             });
 
             if (geocoderContainerRef.current) {
-                // Clear any previous instances before appending
                 while (geocoderContainerRef.current.firstChild) {
                     geocoderContainerRef.current.removeChild(geocoderContainerRef.current.firstChild);
                 }
@@ -110,15 +116,10 @@ function NewDeliveryOrderPage() {
 
             geocoder.on('result', (e: any) => {
                 const result = e.result;
-                const addressDetails: AddressDetails = {
-                    fullName: result.place_name,
-                    addressLine1: result.text,
-                    postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '',
-                    city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
-                    coordinates: result.geometry.coordinates,
-                };
-                setSelectedAddress(addressDetails);
-                 // Clear the input after selection
+                setFullAddress(result.place_name);
+                setAddressLine1(result.text || '');
+                setPostcode(result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '');
+                setCity(result.context?.find((c: any) => c.id.startsWith('place'))?.text || '');
                 geocoder.clear();
             });
         }
@@ -126,11 +127,13 @@ function NewDeliveryOrderPage() {
 
     
     const handleCreateOrder = () => {
-        if (!selectedAddress || !customerName || !phoneNumber) {
+        const finalAddress = isAutocompleteEnabled ? fullAddress : `${addressLine1}, ${city}, ${postcode}`;
+
+        if (!finalAddress || !customerName || !phoneNumber) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
-                description: "Please select an address and fill in all customer details."
+                description: "Please provide a full address and all customer details."
             });
             return;
         }
@@ -138,11 +141,13 @@ function NewDeliveryOrderPage() {
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: selectedAddress.fullName,
+            address: finalAddress,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
+    
+    const isReadyForOrder = (!!fullAddress || (!!addressLine1 && !!postcode)) && !!customerName && !!phoneNumber;
 
     return (
         <>
@@ -180,29 +185,44 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Find Address</Label>
-                             {!apiKey && (
-                                <p className="text-xs text-destructive p-2 bg-destructive/10 rounded-md">Mapbox integration is not configured. Please add an API key in Admin &gt; Connections.</p>
+                        <div className="space-y-4">
+                            <Label>Delivery Address</Label>
+                            {isAutocompleteEnabled ? (
+                                <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none [&_.mapboxgl-ctrl-geocoder--input]:h-10 [&_.mapboxgl-ctrl-geocoder--input]:text-base [&_.mapboxgl-ctrl-geocoder--input]:md:text-sm"/>
+                            ) : (
+                                <div className="space-y-2 p-4 border rounded-md bg-muted/50">
+                                    <p className="text-xs text-muted-foreground">Address autocomplete is disabled. Please enter details manually.</p>
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="address1">House Name/Number</Label>
+                                            <Input id="address1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="city">City</Label>
+                                            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+                                        </div>
+                                     </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="postcode">Postcode</Label>
+                                        <Input id="postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+                                    </div>
+                                </div>
                             )}
-                            <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none [&_.mapboxgl-ctrl-geocoder--input]:h-10 [&_.mapboxgl-ctrl-geocoder--input]:text-base [&_.mapboxgl-ctrl-geocoder--input]:md:text-sm"/>
                         </div>
                         
-                         {selectedAddress && (
+                         {fullAddress && (
                             <Card className="bg-muted/50">
                                 <CardHeader>
                                     <CardTitle className="text-base">Selected Address</CardTitle>
                                 </CardHeader>
                                 <CardContent className="text-sm space-y-1">
-                                    <p><strong>Address:</strong> {selectedAddress.addressLine1}, {selectedAddress.city}</p>
-                                    <p><strong>Postcode:</strong> {selectedAddress.postcode}</p>
-                                    <p className="text-muted-foreground text-xs pt-1">{selectedAddress.fullName}</p>
+                                    <p>{fullAddress}</p>
                                 </CardContent>
                             </Card>
                         )}
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" onClick={handleCreateOrder} disabled={!selectedAddress || !customerName || !phoneNumber}>
+                        <Button className="w-full" onClick={handleCreateOrder} disabled={!isReadyForOrder}>
                             Create Order
                         </Button>
                     </CardFooter>
@@ -212,4 +232,4 @@ function NewDeliveryOrderPage() {
     );
 }
 
-export default withAuth(NewDeliveryOrderPage, ['Admin' as UserRole, 'Advanced' as UserRole, 'Basic' as UserRole], 'delivery');
+export default withAuth(NewDeliveryOrderPage, ['Admin'as UserRole, 'Advanced'as UserRole, 'Basic'as UserRole], 'delivery');
