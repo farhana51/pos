@@ -120,20 +120,19 @@ function NewDeliveryOrderPage() {
                         </div>
 
                         <div className="space-y-4 border-t-2 border-black pt-6">
-                             {isLoadingConfig ? (
+                             {isLoadingConfig && (
                                 <div className="space-y-2">
                                     <Skeleton className="h-8 w-1/3" />
                                     <Skeleton className="h-10 w-full" />
                                 </div>
-                             ) : mapboxConfig?.enabled ? (
+                             )}
+
+                            {!isLoadingConfig && mapboxConfig?.enabled && (
                                 <div className="space-y-2">
                                     <Label>Find Address</Label>
                                     <AddressSearch apiKey={mapboxConfig.apiKey} onAddressSelect={handleAddressSelect} />
                                 </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md text-center">Autocomplete Disabled. Please enable the Mapbox Autocomplete feature in Admin > Connections.</p>
                             )}
-
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
