@@ -51,8 +51,8 @@ function NewDeliveryOrderPage() {
     
     const handleAddressSelect = (selected: any) => {
         setAddress({
+            ...address, // Keep flatNumber if user entered it manually
             houseNumber: selected.houseNumber || '',
-            flatNumber: '', // Mapbox doesn't typically provide a separate flat number
             roadName: selected.roadName || '',
             city: selected.city || '',
             postcode: selected.postcode || '',
@@ -119,7 +119,7 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-t-2 border-black pt-6">
+                        <div className="space-y-4 border-t pt-6">
                              {isLoadingConfig && (
                                 <div className="space-y-2">
                                     <Skeleton className="h-8 w-1/3" />
