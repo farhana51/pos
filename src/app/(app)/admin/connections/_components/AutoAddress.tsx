@@ -33,7 +33,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         const loadScript = (id: string, src: string, onLoad: () => void) => {
             if (document.getElementById(id)) {
                 // If script tag exists but objects not on window, wait a bit
-                if (window.mapboxgl && window.MapboxGeocoder) {
+                 if (window.mapboxgl && window.MapboxGeocoder) {
                     onLoad();
                 } else {
                     const timeout = setTimeout(onLoad, 500);
@@ -81,6 +81,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         marker: false,
                         placeholder: 'Type a UK postcode and house number',
                         countries: 'GB',
+                        types: 'address,postcode,place',
                         flyTo: false
                     });
 
@@ -94,10 +95,24 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
 
                     geocoder.on('result', (e: any) => {
                         const result = e.result;
+
+                        // Improved address parsing logic
+                        let houseNumber = result.address || '';
+                        let roadName = result.text || '';
+
+                        // If 'address' property contains the road name, split them
+                        if (houseNumber.includes(roadName) && houseNumber !== roadName) {
+                            houseNumber = houseNumber.replace(roadName, '').trim();
+                        }
+                         // If 'text' contains the house number, split them
+                        if (roadName.includes(houseNumber) && roadName !== houseNumber) {
+                           roadName = roadName.replace(houseNumber, '').trim();
+                        }
+                        
                         const addressDetails = {
-                            fullName: result.place_name,
-                            houseNumber: result.address,
-                            roadName: result.text,
+                            fullName: result.place_name || '',
+                            houseNumber: houseNumber,
+                            roadName: roadName,
                             postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '',
                             city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
                             country: 'United Kingdom',
@@ -105,6 +120,17 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         onAddressSelect(addressDetails);
                     });
 
+                    geocoder.on('clear', () => {
+                        onAddressSelect({
+                            fullName: '',
+                            houseNumber: '',
+                            roadName: '',
+                            postcode: '',
+                            city: '',
+                            country: 'United Kingdom',
+                        });
+                    });
+                    
                     geocoder.on('error', (e: any) => {
                         console.error('A Geocoder error occurred:', e.error);
                         setLoadStatus('error');
