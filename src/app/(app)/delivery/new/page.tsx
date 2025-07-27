@@ -223,5 +223,3 @@ function NewDeliveryOrderPage() {
 }
 
 export default withAuth(NewDeliveryOrderPage, ['Admin'as UserRole, 'Advanced'as UserRole, 'Basic'as UserRole], 'delivery');
-
-    
