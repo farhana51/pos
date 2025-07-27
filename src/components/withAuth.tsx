@@ -1,4 +1,3 @@
-
 // HOC/withAuth.tsx
 'use client'
 import { useEffect, useState } from 'react';
@@ -6,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, hasPermission } from '@/lib/data';
 import type { UserRole } from '@/lib/types';
 import { ShieldBan, Utensils } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const defaultSettings = {
     reservations: true,
