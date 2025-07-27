@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,25 @@ function NewDeliveryOrderPage() {
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
+    const [addressLine1, setAddressLine1] = useState('');
+    const [city, setCity] = useState('');
+    const [postcode, setPostcode] = useState('');
+
+    useEffect(() => {
+        if(selectedAddress) {
+            setAddressLine1(selectedAddress.addressLine1);
+            setCity(selectedAddress.city);
+            setPostcode(selectedAddress.postcode);
+            // If the name has a building name or number prefix, use it for the customer name if empty
+            if(!customerName && isNaN(parseInt(selectedAddress.addressLine1.charAt(0)))) {
+                 setCustomerName(selectedAddress.addressLine1.split(' ')[0]);
+            }
+        }
+    }, [selectedAddress, customerName]);
+
 
     const handleCreateOrder = () => {
-        if (!customerName || !phoneNumber || !selectedAddress) {
+        if (!customerName || !phoneNumber || !addressLine1 || !city || !postcode) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
@@ -33,7 +49,7 @@ function NewDeliveryOrderPage() {
             return;
         }
         
-        const fullAddress = selectedAddress.fullName;
+        const fullAddress = `${addressLine1}, ${city}, ${postcode}`;
 
         const params = new URLSearchParams({
             customerName: customerName,
@@ -44,7 +60,7 @@ function NewDeliveryOrderPage() {
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
     
-    const isReadyForOrder = !!customerName && !!phoneNumber && !!selectedAddress;
+    const isReadyForOrder = !!customerName && !!phoneNumber && !!addressLine1 && !!city && !!postcode;
 
     return (
         <>
@@ -82,23 +98,45 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-t pt-6">
+                        <div className="space-y-2 border-t pt-6">
                             <Label>Delivery Address Search</Label>
                              <AddressSearch onAddressSelect={setSelectedAddress} />
                         </div>
-
-                        {selectedAddress && (
-                            <Card className="bg-muted/50">
-                                <CardHeader>
-                                    <CardTitle className="text-base">Selected Address</CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-sm space-y-1">
-                                    <p><strong>Address:</strong> {selectedAddress.addressLine1}</p>
-                                    <p><strong>City:</strong> {selectedAddress.city}</p>
-                                    <p><strong>Postcode:</strong> {selectedAddress.postcode}</p>
-                                </CardContent>
-                            </Card>
-                        )}
+                        
+                        <div className="space-y-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="address-line-1">Address Line 1</Label>
+                                <Input 
+                                    id="address-line-1" 
+                                    placeholder="House number and street"
+                                    value={addressLine1}
+                                    onChange={(e) => setAddressLine1(e.target.value)}
+                                    required
+                                />
+                            </div>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="city">City/Town</Label>
+                                    <Input 
+                                        id="city" 
+                                        placeholder="e.g. London"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="postcode">Postcode</Label>
+                                    <Input 
+                                        id="postcode" 
+                                        placeholder="e.g. SW1A 1AA"
+                                        value={postcode}
+                                        onChange={(e) => setPostcode(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={handleCreateOrder} disabled={!isReadyForOrder}>

@@ -14,15 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 
 const initialConnectionsState = {
-    orderWeb: {
-        enabled: false,
-        apiKey: '',
-        apiUrl: ''
-    },
-    thirdPartyOrder: {
-        enabled: false,
-        apiUrl: ''
-    },
     mapboxAutocomplete: {
         enabled: false,
         apiKey: '',
@@ -40,11 +31,8 @@ function ConnectionsPage() {
             // Deep merge to prevent crashes if saved data is outdated
             setConnections(prev => {
                 const newState = { ...initialConnectionsState };
-                for (const key in newState) {
-                    const typedKey = key as keyof typeof initialConnectionsState;
-                    if (parsedSaved[typedKey]) {
-                        newState[typedKey] = { ...newState[typedKey], ...parsedSaved[typedKey] };
-                    }
+                if (parsedSaved.mapboxAutocomplete) {
+                    newState.mapboxAutocomplete = { ...newState.mapboxAutocomplete, ...parsedSaved.mapboxAutocomplete };
                 }
                 return newState;
             });
@@ -97,70 +85,6 @@ function ConnectionsPage() {
                                 value={connections.mapboxAutocomplete.apiKey}
                                 onChange={(e) => handleInputChange('mapboxAutocomplete', 'apiKey', e.target.value)}
                                 disabled={!connections.mapboxAutocomplete.enabled}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-                
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="font-headline">Order Web</CardTitle>
-                                <CardDescription>Connect to your online ordering system.</CardDescription>
-                            </div>
-                            <Switch
-                                checked={connections.orderWeb.enabled}
-                                onCheckedChange={(val) => handleInputChange('orderWeb', 'enabled', val)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="orderweb-apikey">API Key</Label>
-                            <Input
-                                id="orderweb-apikey"
-                                placeholder="Enter Order Web API Key"
-                                value={connections.orderWeb.apiKey}
-                                onChange={(e) => handleInputChange('orderWeb', 'apiKey', e.target.value)}
-                                disabled={!connections.orderWeb.enabled}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="orderweb-apiurl">API URL</Label>
-                            <Input
-                                id="orderweb-apiurl"
-                                placeholder="https://api.orderweb.com/v1"
-                                value={connections.orderWeb.apiUrl}
-                                onChange={(e) => handleInputChange('orderWeb', 'apiUrl', e.target.value)}
-                                disabled={!connections.orderWeb.enabled}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                         <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="font-headline">3rd Party Order Integration</CardTitle>
-                                <CardDescription>Connect to a generic third-party order system.</CardDescription>
-                            </div>
-                            <Switch
-                                checked={connections.thirdPartyOrder.enabled}
-                                onCheckedChange={(val) => handleInputChange('thirdPartyOrder', 'enabled', val)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="3rdparty-apiurl">Webhook/API URL</Label>
-                            <Input
-                                id="3rdparty-apiurl"
-                                placeholder="https://api.thirdparty.com/new_order"
-                                value={connections.thirdPartyOrder.apiUrl}
-                                onChange={(e) => handleInputChange('thirdPartyOrder', 'apiUrl', e.target.value)}
-                                disabled={!connections.thirdPartyOrder.enabled}
                             />
                         </div>
                     </CardContent>

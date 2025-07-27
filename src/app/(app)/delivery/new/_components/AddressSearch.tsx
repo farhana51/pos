@@ -1,17 +1,24 @@
 
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Loader2, Terminal } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-declare global {
-  interface Window {
-    mapboxgl: any;
-    MapboxGeocoder: any;
-  }
-}
+export type MapboxFeature = {
+    id: string;
+    place_name: string;
+    text: string;
+    context: {
+        id: string;
+        text: string;
+    }[];
+};
 
 export type AddressDetails = {
     fullName: string;
@@ -22,133 +29,134 @@ export type AddressDetails = {
 
 interface AddressSearchProps {
     onAddressSelect: (details: AddressDetails) => void;
+    initialQuery?: string;
 }
 
-export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect }) => {
-    const geocoderContainerRef = useRef<HTMLDivElement>(null);
-    const geocoderRef = useRef<any>(null);
-    const [loadStatus, setLoadStatus] = useState<'loading' | 'loaded' | 'error' | 'disabled'>('loading');
-    
-    useEffect(() => {
-        if (geocoderRef.current) return;
+const parseAddress = (feature: MapboxFeature): AddressDetails => {
+    const addressLine1 = feature.place_name.split(',')[0] || '';
+    const postcode = feature.context?.find(c => c.id.startsWith('postcode'))?.text || '';
+    const city = feature.context?.find(c => c.id.startsWith('place'))?.text || '';
 
+    return {
+        fullName: feature.place_name,
+        addressLine1,
+        postcode,
+        city,
+    };
+};
+
+export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, initialQuery = '' }) => {
+    const [searchQuery, setSearchQuery] = useState(initialQuery);
+    const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    
+    const [config, setConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
+    const debouncedQuery = useDebounce(searchQuery, 300);
+
+    useEffect(() => {
         const savedConnections = localStorage.getItem('apiConnections');
-        let apiKey: string | null = null;
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
-            if (parsed.mapboxAutocomplete && parsed.mapboxAutocomplete.enabled && parsed.mapboxAutocomplete.apiKey) {
-                apiKey = parsed.mapboxAutocomplete.apiKey;
+            if(parsed.mapboxAutocomplete) {
+                setConfig(parsed.mapboxAutocomplete);
             }
         }
+    }, []);
 
-        if (!apiKey) {
-            setLoadStatus('disabled');
-            return;
-        }
-
-        try {
-            const geocoderCss = document.createElement('link');
-            geocoderCss.id = 'mapbox-geocoder-css';
-            geocoderCss.rel = 'stylesheet';
-            geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
-            document.head.appendChild(geocoderCss);
-
-            const mapboxScript = document.createElement('script');
-            mapboxScript.id = 'mapbox-gl-js';
-            mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
-            mapboxScript.async = true;
-            document.body.appendChild(mapboxScript);
-
-            mapboxScript.onload = () => {
-                const geocoderScript = document.createElement('script');
-                geocoderScript.id = 'mapbox-geocoder-js';
-                geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
-                geocoderScript.async = true;
-                document.body.appendChild(geocoderScript);
-
-                geocoderScript.onload = () => {
-                    if (!window.MapboxGeocoder) {
-                        console.error("Mapbox Geocoder script loaded, but MapboxGeocoder is not available.");
-                        setLoadStatus('error');
-                        return;
+    useEffect(() => {
+        if (debouncedQuery.length > 2 && config?.enabled && config.apiKey) {
+            setIsLoading(true);
+            setError(null);
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(debouncedQuery)}.json?country=GB&types=address,postcode&access_token=${config.apiKey}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.features) {
+                        setSuggestions(data.features);
+                    } else if (data.message) {
+                        setError(`Mapbox API Error: ${data.message}`);
                     }
-                    
-                    window.mapboxgl.accessToken = apiKey;
-                    
-                    const geocoder = new window.MapboxGeocoder({
-                        accessToken: window.mapboxgl.accessToken,
-                        marker: false,
-                        placeholder: 'Enter UK postcode and house number',
-                        countries: 'GB',
-                        types: 'address,postcode,place'
-                    });
-
-                    if (geocoderContainerRef.current) {
-                        geocoderContainerRef.current.innerHTML = '';
-                        geocoderContainerRef.current.appendChild(geocoder.onAdd());
-                        setLoadStatus('loaded');
-                    }
-                    
-                    geocoderRef.current = geocoder;
-
-                    geocoder.on('result', (e: any) => {
-                        const { result } = e;
-                         const addressDetails: AddressDetails = {
-                            fullName: result.place_name,
-                            addressLine1: `${result.address ? result.address + ' ' : ''}${result.text}`,
-                            postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '',
-                            city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
-                        };
-                        onAddressSelect(addressDetails);
-                        geocoder.clear();
-                    });
-
-                    geocoder.on('error', (e: any) => {
-                        console.error('Geocoder Error:', e.error);
-                        setLoadStatus('error');
-                    });
-                };
-            };
-        } catch (err) {
-            console.error("Failed to load Mapbox scripts:", err);
-            setLoadStatus('error');
+                })
+                .catch(err => setError(`Network error: ${err.message}`))
+                .finally(() => setIsLoading(false));
+        } else {
+            setSuggestions([]);
         }
+    }, [debouncedQuery, config]);
 
-        return () => {
-            document.getElementById('mapbox-geocoder-css')?.remove();
-            document.getElementById('mapbox-gl-js')?.remove();
-            document.getElementById('mapbox-geocoder-js')?.remove();
-        };
-
-    }, [onAddressSelect]);
-
-    if (loadStatus === 'loading') {
+    const handleSelect = (feature: MapboxFeature) => {
+        const details = parseAddress(feature);
+        setSearchQuery(details.addressLine1);
+        onAddressSelect(details);
+        setIsPopoverOpen(false);
+    };
+    
+    if (config === null) {
         return <Skeleton className="h-10 w-full" />;
     }
 
-    if (loadStatus === 'disabled') {
+    if (!config.enabled) {
         return (
-            <Alert>
+             <Alert>
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>Autocomplete Disabled</AlertTitle>
                 <AlertDescription>
-                    Please enable the Mapbox Autocomplete feature and provide an API key in Admin &gt; Connections.
+                    Please enable the Mapbox Autocomplete feature in Admin &gt; Connections.
                 </AlertDescription>
             </Alert>
-        );
+        )
     }
 
-    if (loadStatus === 'error') {
+    if (!config.apiKey) {
          return (
-            <Alert variant="destructive">
+             <Alert variant="destructive">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Error Loading Address Search</AlertTitle>
+                <AlertTitle>API Key Missing</AlertTitle>
                 <AlertDescription>
-                   Could not load the address search component. Please check the browser console (F12) for more details. The API key may be invalid or restricted.
+                   Please provide a Mapbox API key in Admin &gt; Connections.
                 </AlertDescription>
             </Alert>
-        );
+        )
     }
-    
-    return <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none" style={{ display: loadStatus === 'loaded' ? 'block' : 'none' }} />;
+
+    return (
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverAnchor asChild>
+                <Input
+                    value={searchQuery}
+                    onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        if(!isPopoverOpen) setIsPopoverOpen(true);
+                    }}
+                    placeholder="Start typing an address or postcode..."
+                    className="w-full"
+                    autoComplete="off"
+                />
+            </PopoverAnchor>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+                <Command>
+                     <CommandList>
+                        {isLoading && (
+                            <div className="p-4 flex items-center justify-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <span>Loading...</span>
+                            </div>
+                        )}
+                        {error && <CommandEmpty>{error}</CommandEmpty>}
+                        {!isLoading && !error && suggestions.length === 0 && debouncedQuery.length > 2 && (
+                            <CommandEmpty>No results found.</CommandEmpty>
+                        )}
+                        <CommandGroup>
+                            {suggestions.map((feature) => (
+                                <CommandItem key={feature.id} onSelect={() => handleSelect(feature)} value={feature.place_name}>
+                                    {feature.place_name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                     </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
 };
