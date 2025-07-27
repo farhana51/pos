@@ -127,7 +127,7 @@ function NewDeliveryOrderPage() {
                                 </div>
                              )}
 
-                            {!isLoadingConfig && mapboxConfig?.enabled && (
+                            {!isLoadingConfig && mapboxConfig?.enabled && mapboxConfig.apiKey && (
                                 <div className="space-y-2">
                                     <Label>Find Address</Label>
                                     <AddressSearch apiKey={mapboxConfig.apiKey} onAddressSelect={handleAddressSelect} />

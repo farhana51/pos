@@ -35,8 +35,13 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                  if (window.mapboxgl && window.MapboxGeocoder) {
                     onLoad();
                 } else {
-                    const timeout = setTimeout(onLoad, 500); // Wait for scripts to be available
-                    return () => clearTimeout(timeout);
+                    // Poll until the libraries are available
+                    const interval = setInterval(() => {
+                        if (window.mapboxgl && window.MapboxGeocoder) {
+                            clearInterval(interval);
+                            onLoad();
+                        }
+                    }, 100);
                 }
                 return;
             }
