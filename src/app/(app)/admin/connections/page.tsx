@@ -19,10 +19,6 @@ const initialConnectionsState = {
         apiKey: '',
         apiUrl: ''
     },
-    mapboxAutocomplete: {
-        enabled: false,
-        apiKey: ''
-    },
     mapboxDeliveryZone: {
         enabled: false,
         apiKey: ''
@@ -115,33 +111,6 @@ function ConnectionsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="font-headline">Mapbox Address Autocomplete</CardTitle>
-                                <CardDescription>For automatic address lookup when creating delivery orders.</CardDescription>
-                            </div>
-                            <Switch
-                                checked={connections.mapboxAutocomplete.enabled}
-                                onCheckedChange={(val) => handleInputChange('mapboxAutocomplete', 'enabled', val)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="mapbox-apikey">Public Access Token (pk...)</Label>
-                            <Input
-                                id="mapbox-apikey"
-                                placeholder="pk.ey..."
-                                value={connections.mapboxAutocomplete.apiKey}
-                                onChange={(e) => handleInputChange('mapboxAutocomplete', 'apiKey', e.target.value)}
-                                disabled={!connections.mapboxAutocomplete.enabled}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-                
                  <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">

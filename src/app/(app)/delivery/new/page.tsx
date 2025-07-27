@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,142 +11,99 @@ import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, Loader2 } from "lucide-react";
-
-interface SelectedAddress {
-    fullName: string;
-    addressLine1: string;
-    postcode: string;
-    city: string;
-    region: string;
-    country: string;
-    coordinates: [number, number];
-}
+import { Terminal } from "lucide-react";
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-    
+
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
-
-    // Mapbox Geocoder Refs
-    const geocoderContainerRef = useRef(null);
-    const geocoderRef = useRef<any>(null); // Using any to avoid type issues with external library
-
-    // API Key State from localStorage
-    const [apiKey, setApiKey] = useState<string | null>(null);
-    const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
-    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-
-    // Effect to get API config from local storage
-    useEffect(() => {
-        const connections = localStorage.getItem('apiConnections');
-        if (connections) {
-            const parsed = JSON.parse(connections);
-            if (parsed.mapboxAutocomplete?.enabled && parsed.mapboxAutocomplete?.apiKey) {
-                setApiKey(parsed.mapboxAutocomplete.apiKey);
-                setIsAutocompleteEnabled(true);
-            } else {
-                setIsAutocompleteEnabled(false);
-            }
-        } else {
-            setIsAutocompleteEnabled(false);
-        }
-        setIsLoadingConfig(false);
-    }, []);
     
-    // This useEffect hook runs once to load scripts and initialize the geocoder
+    // Address State
+    const [postcode, setPostcode] = useState('');
+    const [houseNumber, setHouseNumber] = useState('');
+    const [street, setStreet] = useState('');
+    const [city, setCity] = useState('');
+    
+    // Postcodes.io State
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [apiError, setApiError] = useState('');
+    const debouncedPostcode = useDebounce(postcode, 300);
+
+    const fetchSuggestions = useCallback(async (query: string) => {
+        if (query.length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            const response = await fetch(`https://api.postcodes.io/postcodes/${query}/autocomplete`);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            if (data.status === 200 && data.result) {
+                setSuggestions(data.result);
+                setApiError('');
+            } else {
+                setSuggestions([]);
+            }
+        } catch (err) {
+            console.error('Autocomplete API error:', err);
+            setSuggestions([]);
+        }
+    }, []);
+
     useEffect(() => {
-        if (!isAutocompleteEnabled || !apiKey || !geocoderContainerRef.current) return;
+        fetchSuggestions(debouncedPostcode);
+    }, [debouncedPostcode, fetchSuggestions]);
+    
+    const lookupPostcode = async (pc: string) => {
+        try {
+            setApiError('');
+            const response = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+            const data = await response.json();
+            if (data.status === 200) {
+                setCity(data.result.admin_district || data.result.region || '');
+            } else {
+                setApiError(data.error || 'Invalid postcode.');
+                setCity('');
+            }
+        } catch (err) {
+            console.error('Lookup API error:', err);
+            setApiError('Failed to fetch postcode details.');
+        }
+    };
 
-        // --- SCRIPT AND STYLESHEET LOADING ---
-        const geocoderCss = document.createElement('link');
-        geocoderCss.rel = 'stylesheet';
-        geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
-        geocoderCss.type = 'text/css';
-        document.head.appendChild(geocoderCss);
-
-        const mapboxScript = document.createElement('script');
-        mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
-        mapboxScript.async = true;
-        document.body.appendChild(mapboxScript);
-
-        mapboxScript.onload = () => {
-            const geocoderScript = document.createElement('script');
-            geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
-            geocoderScript.async = true;
-            document.body.appendChild(geocoderScript);
-
-            geocoderScript.onload = () => {
-                if (geocoderRef.current || !geocoderContainerRef.current) return; // Prevent re-initialization
-
-                (window as any).mapboxgl.accessToken = apiKey;
-
-                const geocoder = new (window as any).MapboxGeocoder({
-                    accessToken: apiKey,
-                    marker: false,
-                    placeholder: 'Type a UK postcode and house number',
-                    countries: 'GB',
-                    types: 'address,postcode,place'
-                });
-                
-                // Clear any existing children before appending
-                while (geocoderContainerRef.current.firstChild) {
-                    geocoderContainerRef.current.removeChild(geocoderContainerRef.current.firstChild);
-                }
-                geocoderContainerRef.current.appendChild(geocoder.onAdd());
-                
-                geocoderRef.current = geocoder;
-
-                geocoder.on('result', (e: any) => {
-                    const result = e.result;
-                    const addressDetails = {
-                        fullName: result.place_name,
-                        addressLine1: result.text,
-                        postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || 'N/A',
-                        city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || 'N/A',
-                        region: result.context?.find((c: any) => c.id.startsWith('region'))?.text || 'N/A',
-                        country: result.context?.find((c: any) => c.id.startsWith('country'))?.text || 'N/A',
-                        coordinates: result.geometry.coordinates,
-                    };
-                    setSelectedAddress(addressDetails);
-                });
-            };
-        };
-
-        // Basic cleanup
-        return () => {
-             if (geocoderRef.current) {
-                geocoderRef.current.onRemove();
-             }
-        };
-    }, [isAutocompleteEnabled, apiKey]); // Rerun if config changes
-
+    const handleSuggestionClick = (pc: string) => {
+        setPostcode(pc);
+        setSuggestions([]);
+        lookupPostcode(pc);
+    };
 
     const handleCreateOrder = () => {
-        if (!selectedAddress || !customerName || !phoneNumber) {
+        if (!customerName || !phoneNumber || !postcode || !street || !houseNumber || !city) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
-                description: "Please provide a full address and all customer details."
+                description: "Please fill in all customer and address details."
             });
             return;
         }
+        
+        const fullAddress = `${houseNumber} ${street}, ${city}, ${postcode}`;
 
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: selectedAddress.fullName,
+            address: fullAddress,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
     
-    const isReadyForOrder = !!selectedAddress && !!customerName && !!phoneNumber;
+    const isReadyForOrder = !!customerName && !!phoneNumber && !!postcode && !!street && !!houseNumber && !!city;
 
     return (
         <>
@@ -156,7 +113,7 @@ function NewDeliveryOrderPage() {
                     <CardHeader>
                         <CardTitle>Customer & Delivery Details</CardTitle>
                         <CardDescription>
-                            Enter the customer's information and search for their address below.
+                            Enter the customer's information and delivery address below.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -184,38 +141,60 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="address-search">Delivery Address Search</Label>
-                            {isLoadingConfig ? (
-                                <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
-                            ) : isAutocompleteEnabled ? (
-                                <div id="geocoder-container" ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none [&_.mapboxgl-ctrl-geocoder--input]:h-10 [&_.mapboxgl-ctrl-geocoder--input]:text-base [&_.mapboxgl-ctrl-geocoder--input]:md:text-sm">
-                                    {/* The Mapbox Geocoder search bar will be injected here */}
+                        <div className="space-y-4 border-t pt-6">
+                            <div className="relative space-y-2">
+                                <Label htmlFor="postcode">Postcode</Label>
+                                <Input
+                                    id="postcode"
+                                    placeholder="Start typing a UK postcode..."
+                                    value={postcode}
+                                    onChange={(e) => setPostcode(e.target.value.toUpperCase())}
+                                    onBlur={() => lookupPostcode(postcode)}
+                                />
+                                {suggestions.length > 0 && (
+                                    <ul className="absolute z-10 w-full bg-background border rounded-md mt-1 max-h-48 overflow-y-auto">
+                                        {suggestions.map(pc => (
+                                            <li key={pc} onClick={() => handleSuggestionClick(pc)} className="p-2 cursor-pointer hover:bg-accent">
+                                                {pc}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="house-number">House Name/Number</Label>
+                                    <Input
+                                        id="house-number"
+                                        placeholder="e.g. 10 or The Willows"
+                                        value={houseNumber}
+                                        onChange={(e) => setHouseNumber(e.target.value)}
+                                    />
                                 </div>
-                            ) : (
-                                 <Alert>
-                                    <Terminal className="h-4 w-4" />
-                                    <AlertTitle>Autocomplete Disabled</AlertTitle>
-                                    <AlertDescription>
-                                        Please enable the Mapbox Autocomplete feature and provide an API key in Admin &gt; Connections.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
+                                 <div className="space-y-2">
+                                    <Label htmlFor="street">Street</Label>
+                                    <Input
+                                        id="street"
+                                        placeholder="e.g. Downing Street"
+                                        value={street}
+                                        onChange={(e) => setStreet(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="city">City/Town</Label>
+                                <Input
+                                    id="city"
+                                    placeholder="e.g. London"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                />
+                            </div>
+
+                             {apiError && <p className="text-sm text-destructive">{apiError}</p>}
                         </div>
-                        
-                        {selectedAddress && (
-                            <Card className="bg-muted/50">
-                                <CardHeader>
-                                    <CardTitle className="text-base">Selected Address</CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-sm space-y-1">
-                                    <p><strong>Address:</strong> {selectedAddress.addressLine1}</p>
-                                    <p><strong>City:</strong> {selectedAddress.city}</p>
-                                    <p><strong>Postcode:</strong> {selectedAddress.postcode}</p>
-                                    <p className="pt-2 text-xs text-muted-foreground">{selectedAddress.fullName}</p>
-                                </CardContent>
-                            </Card>
-                        )}
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={handleCreateOrder} disabled={!isReadyForOrder}>
