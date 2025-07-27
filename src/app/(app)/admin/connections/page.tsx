@@ -11,7 +11,6 @@ import withAuth from "@/components/withAuth";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 
 const initialConnectionsState = {
     mapboxAutocomplete: {
