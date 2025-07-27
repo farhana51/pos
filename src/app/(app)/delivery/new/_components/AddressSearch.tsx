@@ -21,28 +21,30 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect })
     const geocoderRef = useRef<any>(null);
 
     const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
+    const [apiKey, setApiKey] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        let isEnabled = false;
-        let apiKey: string | null = null;
-        
+        // Read from localStorage to check if the feature is enabled.
+        // This runs on the client-side only.
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
-            if (parsed.mapboxAutocomplete) {
-                isEnabled = parsed.mapboxAutocomplete.enabled;
-                apiKey = parsed.mapboxAutocomplete.apiKey;
+            if (parsed.mapboxAutocomplete && parsed.mapboxAutocomplete.enabled && parsed.mapboxAutocomplete.apiKey) {
+                setIsAutocompleteEnabled(true);
+                setApiKey(parsed.mapboxAutocomplete.apiKey);
             }
         }
-        
-        setIsAutocompleteEnabled(isEnabled);
         setIsLoading(false);
+    }, []);
 
-        if (!isEnabled || !apiKey || !geocoderContainerRef.current) {
+    useEffect(() => {
+        // This effect runs only if autocomplete is enabled and an API key is present.
+        if (!isAutocompleteEnabled || !apiKey || !geocoderContainerRef.current) {
             return;
         }
 
+        // --- SCRIPT AND STYLESHEET LOADING ---
         const geocoderCss = document.createElement('link');
         geocoderCss.rel = 'stylesheet';
         geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
@@ -53,7 +55,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect })
         mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
         mapboxScript.async = true;
         document.body.appendChild(mapboxScript);
-
+        
         mapboxScript.onload = () => {
             const geocoderScript = document.createElement('script');
             geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
@@ -108,7 +110,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect })
              }
         };
 
-    }, [onAddressSelect]);
+    }, [isAutocompleteEnabled, apiKey, onAddressSelect]);
 
     if (isLoading) {
         return <div className="h-10 w-full bg-muted rounded-md animate-pulse" />;
