@@ -11,38 +11,58 @@ import withAuth from "@/components/withAuth";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
-import { Info } from "lucide-react";
+import { Info, Map } from "lucide-react";
+import AddressSearch from "./_components/AutoAddress";
 
-// Represents the initial state of all possible connections.
-// When adding a new service, define its default state here.
+
 const initialConnectionsState = {
-    // Example for a future connection:
-    // someOtherService: {
-    //     enabled: false,
-    //     apiKey: '',
-    // },
+    mapbox: {
+        enabled: true,
+        apiKey: '',
+    },
 }
 
 function ConnectionsPage() {
     const { toast } = useToast();
-    // Since mapbox is removed, the connections state is now empty.
-    const [connections, setConnections] = useState<typeof initialConnectionsState>({});
+    const [connections, setConnections] = useState(initialConnectionsState);
 
     useEffect(() => {
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
-             // We'll keep this to handle potential future connections,
-             // but it won't do anything for now.
-            setConnections(JSON.parse(savedConnections));
+            const parsed = JSON.parse(savedConnections);
+            // Ensure we have a default for mapbox if it's missing from old storage
+            setConnections({ ...initialConnectionsState, ...parsed, mapbox: { ...initialConnectionsState.mapbox, ...parsed.mapbox }});
         }
     }, []);
 
+    const handleSwitchChange = (service: keyof typeof initialConnectionsState, checked: boolean) => {
+        setConnections(prev => ({
+            ...prev,
+            [service]: { ...prev[service], enabled: checked }
+        }));
+    };
+
+    const handleInputChange = (service: keyof typeof initialConnectionsState, value: string) => {
+        setConnections(prev => ({
+            ...prev,
+            [service]: { ...prev[service], apiKey: value }
+        }));
+    };
+
     const handleSaveChanges = () => {
-        // This will save any future connections added.
         localStorage.setItem('apiConnections', JSON.stringify(connections));
+        window.dispatchEvent(new Event('storage'));
         toast({
             title: "Settings Saved",
             description: "Your API connection settings have been saved.",
+        });
+    }
+    
+    const handleAddressSelect = (address: any) => {
+        console.log("Address selected in connections test:", address);
+        toast({
+            title: "Address Selected",
+            description: `Test successful: ${address.fullName}`,
         });
     }
 
@@ -54,13 +74,43 @@ function ConnectionsPage() {
             <main className="p-4 sm:p-6 lg:p-8 space-y-8">
                  <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Available Connections</CardTitle>
-                        <CardDescription>Configure third-party API integrations for your application.</CardDescription>
+                        <CardTitle className="font-headline flex items-center gap-2"><Map/> Mapbox Auto Address</CardTitle>
+                        <CardDescription>Enable address autocomplete for delivery orders using Mapbox.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-48">
-                        <Info className="w-12 h-12 mb-4" />
-                        <p>There are no API connections to configure at this time.</p>
-                        <p className="text-sm">Future integrations will appear here.</p>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="mapbox-enabled" className="text-base">Enable Address Autocomplete</Label>
+                                <p className="text-sm text-muted-foreground">Turn this feature on or off for the new delivery order form.</p>
+                            </div>
+                            <Switch 
+                                id="mapbox-enabled" 
+                                checked={connections.mapbox.enabled} 
+                                onCheckedChange={(checked) => handleSwitchChange('mapbox', checked)} 
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="mapbox-key">Mapbox Public Access Token</Label>
+                            <Input 
+                                id="mapbox-key" 
+                                type="text"
+                                placeholder="pk.eyJ1..."
+                                value={connections.mapbox.apiKey}
+                                onChange={(e) => handleInputChange('mapbox', e.target.value)}
+                            />
+                        </div>
+
+                        {connections.mapbox.enabled && (
+                            <div className="border-t pt-4">
+                                <h3 className="text-sm font-medium text-muted-foreground mb-2">Live Preview</h3>
+                                <div className="p-4 border rounded-md">
+                                    <AddressSearch 
+                                        apiKey={connections.mapbox.apiKey}
+                                        onAddressSelect={handleAddressSelect}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </main>
