@@ -91,7 +91,7 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-t-2 pt-6">
+                        <div className="space-y-4 border-t-2 border-black pt-6">
                              <div className="space-y-2">
                                 <Label htmlFor="address-line1">Address Line 1</Label>
                                 <Input 
