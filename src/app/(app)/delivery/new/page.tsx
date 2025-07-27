@@ -13,9 +13,16 @@ import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal, Loader2 } from "lucide-react";
-import { useDebounce } from "@/hooks/use-debounce";
-import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
-import { getMapboxSuggestions, getMapboxAddressDetails, MapboxSuggestion, MapboxAddressFeature } from "@/lib/api";
+
+interface SelectedAddress {
+    fullName: string;
+    addressLine1: string;
+    postcode: string;
+    city: string;
+    region: string;
+    country: string;
+    coordinates: [number, number];
+}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -24,34 +31,27 @@ function NewDeliveryOrderPage() {
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<MapboxAddressFeature | null>(null);
+    const [selectedAddress, setSelectedAddress] = useState<SelectedAddress | null>(null);
 
-    // Search State
-    const [searchQuery, setSearchQuery] = useState('');
-    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    
-    // Use a ref to store the session token so it persists through re-renders
-    const sessionTokenRef = useRef<string | null>(null);
+    // Mapbox Geocoder Refs
+    const geocoderContainerRef = useRef(null);
+    const geocoderRef = useRef<any>(null); // Using any to avoid type issues with external library
 
     // API Key State from localStorage
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
-    const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
     // Effect to get API config from local storage
     useEffect(() => {
         const connections = localStorage.getItem('apiConnections');
         if (connections) {
             const parsed = JSON.parse(connections);
-            if(parsed.mapboxAutocomplete?.enabled && parsed.mapboxAutocomplete?.apiKey) {
-                 setApiKey(parsed.mapboxAutocomplete.apiKey);
-                 setIsAutocompleteEnabled(true);
+            if (parsed.mapboxAutocomplete?.enabled && parsed.mapboxAutocomplete?.apiKey) {
+                setApiKey(parsed.mapboxAutocomplete.apiKey);
+                setIsAutocompleteEnabled(true);
             } else {
-                 setIsAutocompleteEnabled(false);
+                setIsAutocompleteEnabled(false);
             }
         } else {
             setIsAutocompleteEnabled(false);
@@ -59,55 +59,73 @@ function NewDeliveryOrderPage() {
         setIsLoadingConfig(false);
     }, []);
     
-    // Effect to generate a session token once
+    // This useEffect hook runs once to load scripts and initialize the geocoder
     useEffect(() => {
-        if (!sessionTokenRef.current) {
-            sessionTokenRef.current = crypto.randomUUID();
-        }
-    }, []);
+        if (!isAutocompleteEnabled || !apiKey || !geocoderContainerRef.current) return;
 
+        // --- SCRIPT AND STYLESHEET LOADING ---
+        const geocoderCss = document.createElement('link');
+        geocoderCss.rel = 'stylesheet';
+        geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
+        geocoderCss.type = 'text/css';
+        document.head.appendChild(geocoderCss);
 
-    // Effect to fetch suggestions when debounced query changes
-    useEffect(() => {
-        if (!isAutocompleteEnabled || !apiKey || debouncedSearchQuery.length < 3) {
-            setSuggestions([]);
-            setIsPopoverOpen(false);
-            return;
-        }
+        const mapboxScript = document.createElement('script');
+        mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
+        mapboxScript.async = true;
+        document.body.appendChild(mapboxScript);
 
-        const fetchSuggestions = async () => {
-            setIsSearching(true);
-            const results = await getMapboxSuggestions(debouncedSearchQuery, apiKey!, sessionTokenRef.current!);
-            setSuggestions(results);
-            setIsPopoverOpen(results.length > 0);
-            setIsSearching(false);
+        mapboxScript.onload = () => {
+            const geocoderScript = document.createElement('script');
+            geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
+            geocoderScript.async = true;
+            document.body.appendChild(geocoderScript);
+
+            geocoderScript.onload = () => {
+                if (geocoderRef.current || !geocoderContainerRef.current) return; // Prevent re-initialization
+
+                (window as any).mapboxgl.accessToken = apiKey;
+
+                const geocoder = new (window as any).MapboxGeocoder({
+                    accessToken: apiKey,
+                    marker: false,
+                    placeholder: 'Type a UK postcode and house number',
+                    countries: 'GB',
+                    types: 'address,postcode,place'
+                });
+                
+                // Clear any existing children before appending
+                while (geocoderContainerRef.current.firstChild) {
+                    geocoderContainerRef.current.removeChild(geocoderContainerRef.current.firstChild);
+                }
+                geocoderContainerRef.current.appendChild(geocoder.onAdd());
+                
+                geocoderRef.current = geocoder;
+
+                geocoder.on('result', (e: any) => {
+                    const result = e.result;
+                    const addressDetails = {
+                        fullName: result.place_name,
+                        addressLine1: result.text,
+                        postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || 'N/A',
+                        city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || 'N/A',
+                        region: result.context?.find((c: any) => c.id.startsWith('region'))?.text || 'N/A',
+                        country: result.context?.find((c: any) => c.id.startsWith('country'))?.text || 'N/A',
+                        coordinates: result.geometry.coordinates,
+                    };
+                    setSelectedAddress(addressDetails);
+                });
+            };
         };
 
-        fetchSuggestions();
+        // Basic cleanup
+        return () => {
+             if (geocoderRef.current) {
+                geocoderRef.current.onRemove();
+             }
+        };
+    }, [isAutocompleteEnabled, apiKey]); // Rerun if config changes
 
-    }, [debouncedSearchQuery, isAutocompleteEnabled, apiKey]);
-
-
-    const handleSelectAddress = async (suggestion: MapboxSuggestion) => {
-        if (!apiKey) return;
-        
-        setIsSearching(true);
-        setIsPopoverOpen(false);
-        setSearchQuery(suggestion.name);
-
-        const addressDetails = await getMapboxAddressDetails(suggestion.mapbox_id, apiKey, sessionTokenRef.current!);
-        
-        if (addressDetails) {
-            setSelectedAddress(addressDetails);
-        } else {
-             toast({
-                variant: 'destructive',
-                title: "Error",
-                description: "Could not retrieve full address details."
-            });
-        }
-        setIsSearching(false);
-    };
 
     const handleCreateOrder = () => {
         if (!selectedAddress || !customerName || !phoneNumber) {
@@ -122,7 +140,7 @@ function NewDeliveryOrderPage() {
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: selectedAddress.properties.full_address,
+            address: selectedAddress.fullName,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
@@ -171,32 +189,9 @@ function NewDeliveryOrderPage() {
                             {isLoadingConfig ? (
                                 <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
                             ) : isAutocompleteEnabled ? (
-                                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                                    <PopoverAnchor asChild>
-                                         <div className="relative">
-                                            <Input
-                                                id="address-search"
-                                                placeholder="Start typing a UK Postcode or Address"
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                autoComplete="off"
-                                            />
-                                            {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />}
-                                        </div>
-                                    </PopoverAnchor>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                       {suggestions.map((suggestion) => (
-                                           <div
-                                                key={suggestion.mapbox_id}
-                                                className="p-3 hover:bg-muted cursor-pointer"
-                                                onClick={() => handleSelectAddress(suggestion)}
-                                            >
-                                                <p className="font-medium text-sm">{suggestion.name}</p>
-                                                <p className="text-xs text-muted-foreground">{suggestion.address}</p>
-                                           </div>
-                                       ))}
-                                    </PopoverContent>
-                                </Popover>
+                                <div id="geocoder-container" ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none [&_.mapboxgl-ctrl-geocoder--input]:h-10 [&_.mapboxgl-ctrl-geocoder--input]:text-base [&_.mapboxgl-ctrl-geocoder--input]:md:text-sm">
+                                    {/* The Mapbox Geocoder search bar will be injected here */}
+                                </div>
                             ) : (
                                  <Alert>
                                     <Terminal className="h-4 w-4" />
@@ -214,10 +209,10 @@ function NewDeliveryOrderPage() {
                                     <CardTitle className="text-base">Selected Address</CardTitle>
                                 </CardHeader>
                                 <CardContent className="text-sm space-y-1">
-                                    <p><strong>Address:</strong> {selectedAddress.properties.address_line1}</p>
-                                    <p><strong>City:</strong> {selectedAddress.properties.place}</p>
-                                    <p><strong>Postcode:</strong> {selectedAddress.properties.postcode}</p>
-                                     <p className="pt-2 text-xs text-muted-foreground">{selectedAddress.properties.full_address}</p>
+                                    <p><strong>Address:</strong> {selectedAddress.addressLine1}</p>
+                                    <p><strong>City:</strong> {selectedAddress.city}</p>
+                                    <p><strong>Postcode:</strong> {selectedAddress.postcode}</p>
+                                    <p className="pt-2 text-xs text-muted-foreground">{selectedAddress.fullName}</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -234,5 +229,3 @@ function NewDeliveryOrderPage() {
 }
 
 export default withAuth(NewDeliveryOrderPage, ['Admin'as UserRole, 'Advanced'as UserRole, 'Basic'as UserRole], 'delivery');
-
-    
