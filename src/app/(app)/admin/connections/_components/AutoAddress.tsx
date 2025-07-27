@@ -81,6 +81,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         marker: false,
                         placeholder: 'Type a UK postcode and house number',
                         countries: 'GB',
+                        flyTo: false
                     });
 
                     if (geocoderContainerRef.current) {
