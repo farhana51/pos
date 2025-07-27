@@ -30,6 +30,7 @@ export type AddressDetails = {
 interface AddressSearchProps {
     onAddressSelect: (details: AddressDetails) => void;
     initialQuery?: string;
+    config: { enabled: boolean; apiKey: string } | null;
 }
 
 const parseAddress = (feature: MapboxFeature): AddressDetails => {
@@ -45,26 +46,15 @@ const parseAddress = (feature: MapboxFeature): AddressDetails => {
     };
 };
 
-export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, initialQuery = '' }) => {
+export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect, initialQuery = '', config }) => {
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     
-    const [config, setConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
     const debouncedQuery = useDebounce(searchQuery, 300);
-
-    useEffect(() => {
-        const savedConnections = localStorage.getItem('apiConnections');
-        if (savedConnections) {
-            const parsed = JSON.parse(savedConnections);
-            if(parsed.mapboxAutocomplete) {
-                setConfig(parsed.mapboxAutocomplete);
-            }
-        }
-    }, []);
-
+    
     useEffect(() => {
         if (debouncedQuery.length > 2 && config?.enabled && config.apiKey) {
             setIsLoading(true);

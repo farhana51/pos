@@ -18,6 +18,8 @@ function NewDeliveryOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
 
+    const [mapboxConfig, setMapboxConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
+
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -25,6 +27,18 @@ function NewDeliveryOrderPage() {
     const [addressLine1, setAddressLine1] = useState('');
     const [city, setCity] = useState('');
     const [postcode, setPostcode] = useState('');
+
+    useEffect(() => {
+        const savedConnections = localStorage.getItem('apiConnections');
+        if (savedConnections) {
+            const parsed = JSON.parse(savedConnections);
+            if(parsed.mapboxAutocomplete) {
+                setMapboxConfig(parsed.mapboxAutocomplete);
+            }
+        } else {
+             setMapboxConfig({ enabled: false, apiKey: '' });
+        }
+    }, []);
 
     useEffect(() => {
         if(selectedAddress) {
@@ -100,7 +114,7 @@ function NewDeliveryOrderPage() {
 
                         <div className="space-y-2 border-t pt-6">
                             <Label>Delivery Address Search</Label>
-                             <AddressSearch onAddressSelect={setSelectedAddress} />
+                             <AddressSearch onAddressSelect={setSelectedAddress} config={mapboxConfig} />
                         </div>
                         
                         <div className="space-y-4">
