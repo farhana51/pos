@@ -35,7 +35,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                  if (window.mapboxgl && window.MapboxGeocoder) {
                     onLoad();
                 } else {
-                    const timeout = setTimeout(onLoad, 500);
+                    const timeout = setTimeout(onLoad, 500); // Wait for scripts to be available
                     return () => clearTimeout(timeout);
                 }
                 return;
@@ -101,7 +101,9 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         
                         // Handle cases where house number is in properties
                         if (result.properties && result.properties.address) {
-                            houseNumber = result.properties.address;
+                           if (!roadName.startsWith(result.properties.address)) {
+                                houseNumber = result.properties.address;
+                           }
                         }
 
                         // Handle cases where road name might include the house number
