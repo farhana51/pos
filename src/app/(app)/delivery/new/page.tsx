@@ -13,6 +13,7 @@ import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddressSearch, AddressDetails } from "./_components/AddressSearch";
 import { MapPin } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 function NewDeliveryOrderPage() {
@@ -20,6 +21,7 @@ function NewDeliveryOrderPage() {
     const { toast } = useToast();
 
     const [mapboxConfig, setMapboxConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
     // Form State
     const [customerName, setCustomerName] = useState('');
@@ -37,6 +39,7 @@ function NewDeliveryOrderPage() {
         } else {
              setMapboxConfig({ enabled: false, apiKey: '' });
         }
+        setIsLoadingConfig(false);
     }, []);
 
     const handleAddressSelect = (details: AddressDetails) => {
@@ -114,7 +117,11 @@ function NewDeliveryOrderPage() {
 
                         <div className="space-y-4 border-t pt-6">
                             <Label>Delivery Address Search</Label>
-                             <AddressSearch onAddressSelect={handleAddressSelect} config={mapboxConfig} />
+                            {isLoadingConfig ? (
+                                <Skeleton className="h-10 w-full" />
+                            ) : (
+                                <AddressSearch onAddressSelect={handleAddressSelect} config={mapboxConfig} />
+                            )}
                         </div>
                         
                         {selectedAddress && (
