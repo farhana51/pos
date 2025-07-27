@@ -12,6 +12,8 @@ import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddressSearch, AddressDetails } from "./_components/AddressSearch";
+import { Map, MapPin } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 
 function NewDeliveryOrderPage() {
@@ -32,25 +34,22 @@ function NewDeliveryOrderPage() {
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
-            if(parsed.mapboxAutocomplete) {
-                setMapboxConfig(parsed.mapboxAutocomplete);
-            }
+            setMapboxConfig(parsed.mapboxAutocomplete || { enabled: false, apiKey: '' });
         } else {
              setMapboxConfig({ enabled: false, apiKey: '' });
         }
     }, []);
 
-    useEffect(() => {
-        if(selectedAddress) {
-            setAddressLine1(selectedAddress.addressLine1);
-            setCity(selectedAddress.city);
-            setPostcode(selectedAddress.postcode);
-            // If the name has a building name or number prefix, use it for the customer name if empty
-            if(!customerName && isNaN(parseInt(selectedAddress.addressLine1.charAt(0)))) {
-                 setCustomerName(selectedAddress.addressLine1.split(' ')[0]);
-            }
+    const handleAddressSelect = (details: AddressDetails) => {
+        setSelectedAddress(details);
+        setAddressLine1(details.addressLine1);
+        setCity(details.city);
+        setPostcode(details.postcode);
+        // If the name has a building name or number prefix, use it for the customer name if empty
+        if(!customerName && isNaN(parseInt(details.addressLine1.charAt(0)))) {
+             setCustomerName(details.addressLine1.split(' ')[0]);
         }
-    }, [selectedAddress, customerName]);
+    };
 
 
     const handleCreateOrder = () => {
@@ -112,45 +111,56 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2 border-t pt-6">
+                        <div className="space-y-4 border-t pt-6">
                             <Label>Delivery Address Search</Label>
-                             <AddressSearch onAddressSelect={setSelectedAddress} config={mapboxConfig} />
+                             <AddressSearch onAddressSelect={handleAddressSelect} config={mapboxConfig} />
                         </div>
                         
-                        <div className="space-y-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="address-line-1">Address Line 1</Label>
-                                <Input 
-                                    id="address-line-1" 
-                                    placeholder="House number and street"
-                                    value={addressLine1}
-                                    onChange={(e) => setAddressLine1(e.target.value)}
-                                    required
-                                />
-                            </div>
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="city">City/Town</Label>
-                                    <Input 
-                                        id="city" 
-                                        placeholder="e.g. London"
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="postcode">Postcode</Label>
-                                    <Input 
-                                        id="postcode" 
-                                        placeholder="e.g. SW1A 1AA"
-                                        value={postcode}
-                                        onChange={(e) => setPostcode(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        {selectedAddress && (
+                             <Card className="bg-muted/50">
+                                <CardHeader>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <MapPin className="text-primary"/>
+                                        Selected Address
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="address-line-1">Address Line 1</Label>
+                                        <Input 
+                                            id="address-line-1" 
+                                            placeholder="House number and street"
+                                            value={addressLine1}
+                                            onChange={(e) => setAddressLine1(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="city">City/Town</Label>
+                                            <Input 
+                                                id="city" 
+                                                placeholder="e.g. London"
+                                                value={city}
+                                                onChange={(e) => setCity(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="postcode">Postcode</Label>
+                                            <Input 
+                                                id="postcode" 
+                                                placeholder="e.g. SW1A 1AA"
+                                                value={postcode}
+                                                onChange={(e) => setPostcode(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground pt-2">Full address: {selectedAddress.fullName}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={handleCreateOrder} disabled={!isReadyForOrder}>
