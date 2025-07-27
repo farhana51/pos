@@ -11,50 +11,16 @@ import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
-import { useDebounce } from "@/hooks/use-debounce";
-
-interface MapboxSuggestion {
-  mapbox_id: string;
-  name: string;
-  place_formatted: string;
-}
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 interface AddressDetails {
-    address: string;
+    fullName: string;
+    addressLine1: string;
     postcode: string;
     city: string;
-    coordinates: [number, number]
+    coordinates: [number, number];
 }
-
-async function getMapboxSuggestions(query: string, accessToken: string): Promise<MapboxSuggestion[]> {
-    if (query.length < 3) return [];
-    const url = `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(query)}&access_token=${accessToken}&session_token=${'session_token'}&country=GB&types=address,postcode,place`;
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch suggestions");
-        const data = await response.json();
-        return data.suggestions || [];
-    } catch (error) {
-        console.error("Mapbox suggestion error:", error);
-        return [];
-    }
-}
-
-async function getMapboxAddressDetails(id: string, accessToken: string): Promise<any> {
-    const url = `https://api.mapbox.com/search/searchbox/v1/retrieve/${id}?access_token=${accessToken}&session_token=${'session_token'}`;
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to retrieve address");
-        const data = await response.json();
-        return data.features[0];
-    } catch (error) {
-        console.error("Mapbox retrieve error:", error);
-        return null;
-    }
-}
-
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -63,22 +29,16 @@ function NewDeliveryOrderPage() {
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [addressQuery, setAddressQuery] = useState('');
     const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
-    
-    // Address fields for manual entry
-    const [addressLine1, setAddressLine1] = useState('');
-    const [city, setCity] = useState('');
-    const [postcode, setPostcode] = useState('');
-    
-    // Autocomplete state
-    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
-    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const debouncedQuery = useDebounce(addressQuery, 500);
+
+    // Geocoder State
+    const geocoderContainerRef = useRef(null);
+    const geocoderRef = useRef(null);
 
     // API Key State
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const connections = localStorage.getItem('apiConnections');
@@ -90,41 +50,81 @@ function NewDeliveryOrderPage() {
             } else {
                  setIsAutocompleteEnabled(false);
             }
+        } else {
+            setIsAutocompleteEnabled(false);
         }
+        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        if (debouncedQuery && apiKey) {
-            getMapboxSuggestions(debouncedQuery, apiKey).then(setSuggestions);
-        } else {
-            setSuggestions([]);
-        }
-    }, [debouncedQuery, apiKey]);
-    
-    const handleSelectAddress = async (suggestion: MapboxSuggestion) => {
-        if (!apiKey) return;
-        const details = await getMapboxAddressDetails(suggestion.mapbox_id, apiKey);
-        if(details) {
-            const address: AddressDetails = {
-                address: details.properties.full_address,
-                city: details.properties.place_formatted,
-                postcode: details.properties.postcode,
-                coordinates: details.geometry.coordinates,
+        if (!isAutocompleteEnabled || !apiKey || geocoderRef.current) return;
+
+        // Load Mapbox Geocoder CSS
+        const geocoderCss = document.createElement('link');
+        geocoderCss.rel = 'stylesheet';
+        geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
+        geocoderCss.type = 'text/css';
+        document.head.appendChild(geocoderCss);
+
+        // Load Mapbox GL JS
+        const mapboxScript = document.createElement('script');
+        mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
+        mapboxScript.async = true;
+        document.body.appendChild(mapboxScript);
+        
+        // Load Geocoder script after GL JS
+        mapboxScript.onload = () => {
+            const geocoderScript = document.createElement('script');
+            geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
+            geocoderScript.async = true;
+            document.body.appendChild(geocoderScript);
+
+            geocoderScript.onload = () => {
+                if (geocoderRef.current) return;
+
+                window.mapboxgl.accessToken = apiKey;
+
+                const geocoder = new window.MapboxGeocoder({
+                    accessToken: apiKey,
+                    marker: false,
+                    placeholder: 'Type a UK postcode and house number',
+                    countries: 'GB',
+                    types: 'address,postcode,place'
+                });
+
+                if (geocoderContainerRef.current) {
+                    (geocoderContainerRef.current as HTMLElement).innerHTML = ''; // Clear previous
+                    geocoder.onAdd(geocoderContainerRef.current);
+                }
+
+                geocoderRef.current = geocoder;
+
+                geocoder.on('result', (e: any) => {
+                    const result = e.result;
+                    const addressDetails: AddressDetails = {
+                        fullName: result.place_name,
+                        addressLine1: result.text,
+                        postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || 'N/A',
+                        city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || 'N/A',
+                        coordinates: result.geometry.coordinates,
+                    };
+                    setSelectedAddress(addressDetails);
+                     // Clear the input after selection to prevent confusion
+                    geocoder.clear();
+                });
             };
-            setSelectedAddress(address);
-            setAddressLine1(details.properties.address_line1 || '');
-            setCity(details.properties.place_formatted || '');
-            setPostcode(details.properties.postcode || '');
-            setAddressQuery(details.properties.full_address);
+        };
+
+        return () => {
+            // Basic cleanup
+             const geocoderCssEl = document.querySelector('link[href*="mapbox-gl-geocoder"]');
+             if(geocoderCssEl) document.head.removeChild(geocoderCssEl);
         }
-        setIsPopoverOpen(false);
-        setSuggestions([]);
-    }
+
+    }, [isAutocompleteEnabled, apiKey]);
 
     const handleCreateOrder = () => {
-        const finalAddress = isAutocompleteEnabled ? selectedAddress?.address : `${addressLine1}, ${city}, ${postcode}`;
-
-        if (!finalAddress || !customerName || !phoneNumber) {
+        if (!selectedAddress || !customerName || !phoneNumber) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
@@ -136,13 +136,13 @@ function NewDeliveryOrderPage() {
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: finalAddress,
+            address: selectedAddress.fullName,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
     
-    const isReadyForOrder = (isAutocompleteEnabled ? !!selectedAddress : (!!addressLine1 && !!postcode)) && !!customerName && !!phoneNumber;
+    const isReadyForOrder = !!selectedAddress && !!customerName && !!phoneNumber;
 
     return (
         <>
@@ -180,62 +180,33 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <Label>Delivery Address</Label>
-                            {isAutocompleteEnabled ? (
-                                <Popover open={isPopoverOpen && suggestions.length > 0} onOpenChange={setIsPopoverOpen}>
-                                <PopoverAnchor asChild>
-                                    <Input 
-                                        placeholder="Type a UK postcode and house number"
-                                        value={addressQuery}
-                                        onChange={(e) => {
-                                            setAddressQuery(e.target.value);
-                                            setIsPopoverOpen(true);
-                                        }}
-                                        disabled={!apiKey}
-                                    />
-                                </PopoverAnchor>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                    {suggestions.map((suggestion) => (
-                                        <div 
-                                            key={suggestion.mapbox_id}
-                                            onClick={() => handleSelectAddress(suggestion)}
-                                            className="p-2 hover:bg-accent cursor-pointer"
-                                        >
-                                            <p className="font-medium">{suggestion.name}</p>
-                                            <p className="text-sm text-muted-foreground">{suggestion.place_formatted}</p>
-                                        </div>
-                                    ))}
-                                </PopoverContent>
-                            </Popover>
+                        <div className="space-y-2">
+                            <Label>Delivery Address Search</Label>
+                            {isLoading ? (
+                                <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+                            ) : isAutocompleteEnabled ? (
+                                 <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder--input]:h-10" />
                             ) : (
-                                <div className="space-y-2 p-4 border rounded-md bg-muted/50">
-                                    <p className="text-xs text-muted-foreground">Address autocomplete is disabled. Please enter details manually.</p>
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="address1">House Name/Number</Label>
-                                            <Input id="address1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="city">City</Label>
-                                            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-                                        </div>
-                                     </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor="postcode">Postcode</Label>
-                                        <Input id="postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
-                                    </div>
-                                </div>
+                                 <Alert>
+                                    <Terminal className="h-4 w-4" />
+                                    <AlertTitle>Autocomplete Disabled</AlertTitle>
+                                    <AlertDescription>
+                                        Please enable the Mapbox Autocomplete feature and provide an API key in Admin &gt; Connections.
+                                    </AlertDescription>
+                                </Alert>
                             )}
                         </div>
                         
-                         {selectedAddress && (
+                        {selectedAddress && (
                             <Card className="bg-muted/50">
                                 <CardHeader>
                                     <CardTitle className="text-base">Selected Address</CardTitle>
                                 </CardHeader>
                                 <CardContent className="text-sm space-y-1">
-                                    <p>{selectedAddress.address}</p>
+                                    <p><strong>Address:</strong> {selectedAddress.addressLine1}</p>
+                                    <p><strong>City:</strong> {selectedAddress.city}</p>
+                                    <p><strong>Postcode:</strong> {selectedAddress.postcode}</p>
+                                     <p className="pt-2 text-xs text-muted-foreground">{selectedAddress.fullName}</p>
                                 </CardContent>
                             </Card>
                         )}
