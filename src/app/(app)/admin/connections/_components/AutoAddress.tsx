@@ -32,7 +32,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         // --- SCRIPT AND STYLESHEET LOADING ---
         const loadScript = (id: string, src: string, onLoad: () => void) => {
             if (document.getElementById(id)) {
-                // If script tag exists but objects not on window, wait a bit
                  if (window.mapboxgl && window.MapboxGeocoder) {
                     onLoad();
                 } else {
@@ -96,17 +95,18 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                     geocoder.on('result', (e: any) => {
                         const result = e.result;
 
-                        // Improved address parsing logic
+                        // --- IMPROVED ADDRESS PARSING LOGIC ---
                         let houseNumber = result.address || '';
                         let roadName = result.text || '';
-
-                        // If 'address' property contains the road name, split them
-                        if (houseNumber.includes(roadName) && houseNumber !== roadName) {
-                            houseNumber = houseNumber.replace(roadName, '').trim();
+                        
+                        // Handle cases where house number is in properties
+                        if (result.properties && result.properties.address) {
+                            houseNumber = result.properties.address;
                         }
-                         // If 'text' contains the house number, split them
-                        if (roadName.includes(houseNumber) && roadName !== houseNumber) {
-                           roadName = roadName.replace(houseNumber, '').trim();
+
+                        // Handle cases where road name might include the house number
+                        if (roadName.includes(houseNumber)) {
+                           roadName = roadName.replace(houseNumber, '').trim().replace(/^,/, '').trim();
                         }
                         
                         const addressDetails = {
