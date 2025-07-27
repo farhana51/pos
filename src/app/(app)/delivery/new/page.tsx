@@ -24,6 +24,7 @@ function NewDeliveryOrderPage() {
         line2: '',
         city: '',
         postcode: '',
+        country: 'United Kingdom',
     });
 
     const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +42,7 @@ function NewDeliveryOrderPage() {
             return;
         }
         
-        const fullAddress = [address.line1, address.line2, address.city, address.postcode].filter(Boolean).join(', ');
+        const fullAddress = [address.line1, address.line2, address.city, address.postcode, address.country].filter(Boolean).join(', ');
         
         const params = new URLSearchParams({
             customerName: customerName,
@@ -135,6 +136,16 @@ function NewDeliveryOrderPage() {
                                         required
                                     />
                                 </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="country">Country</Label>
+                                <Input 
+                                    id="country"
+                                    name="country"
+                                    value={address.country}
+                                    readOnly
+                                    className="bg-muted"
+                                />
                             </div>
                         </div>
                     </CardContent>
