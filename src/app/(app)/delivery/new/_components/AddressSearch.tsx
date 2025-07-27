@@ -19,28 +19,22 @@ interface AddressSearchProps {
 export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect }) => {
     const geocoderContainerRef = useRef<HTMLDivElement>(null);
     const geocoderRef = useRef<any>(null);
-
-    const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
-    const [apiKey, setApiKey] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isEnabled, setIsEnabled] = useState(false);
     
     useEffect(() => {
-        // Read from localStorage to check if the feature is enabled.
-        // This runs on the client-side only.
         const savedConnections = localStorage.getItem('apiConnections');
+        let apiKey: string | null = null;
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
             if (parsed.mapboxAutocomplete && parsed.mapboxAutocomplete.enabled && parsed.mapboxAutocomplete.apiKey) {
-                setIsAutocompleteEnabled(true);
-                setApiKey(parsed.mapboxAutocomplete.apiKey);
+                apiKey = parsed.mapboxAutocomplete.apiKey;
+                setIsEnabled(true);
             }
         }
         setIsLoading(false);
-    }, []);
 
-    useEffect(() => {
-        // This effect runs only if autocomplete is enabled and an API key is present.
-        if (!isAutocompleteEnabled || !apiKey || !geocoderContainerRef.current) {
+        if (!apiKey) {
             return;
         }
 
@@ -110,13 +104,13 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({ onAddressSelect })
              }
         };
 
-    }, [isAutocompleteEnabled, apiKey, onAddressSelect]);
+    }, [onAddressSelect]);
 
     if (isLoading) {
         return <div className="h-10 w-full bg-muted rounded-md animate-pulse" />;
     }
 
-    if (!isAutocompleteEnabled) {
+    if (!isEnabled) {
         return (
             <Alert>
                 <Terminal className="h-4 w-4" />
