@@ -32,7 +32,12 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         // --- SCRIPT AND STYLESHEET LOADING ---
         const loadScript = (id: string, src: string, onLoad: () => void) => {
             if (document.getElementById(id)) {
-                if (onLoad) onLoad();
+                if (window.mapboxgl && window.MapboxGeocoder) {
+                    onLoad();
+                } else {
+                     // If script tag exists but objects not on window, wait a bit
+                    setTimeout(onLoad, 500);
+                }
                 return;
             }
             const script = document.createElement('script');
@@ -65,8 +70,8 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                 loadScript('mapbox-geocoder-js', 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js', () => {
                     console.log("Mapbox Geocoder JS loaded.");
                     
-                    if (!window.MapboxGeocoder) {
-                        console.error("MapboxGeocoder is not available on the window object.");
+                    if (!window.mapboxgl || !window.MapboxGeocoder) {
+                        console.error("Mapbox libraries not available on the window object.");
                         setLoadStatus('error');
                         return;
                     }
