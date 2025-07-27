@@ -138,7 +138,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                     });
                     
                     geocoder.on('error', (e: any) => {
-                        console.error('A Geocoder error occurred:', e.error);
+                        console.error('A Geocoder error occurred:', e.error || 'Empty error object. Check API Key restrictions.');
                         setLoadStatus('error');
                     });
                 });
