@@ -25,12 +25,12 @@ const initialConnectionsState = {
 function ConnectionsPage() {
     const { toast } = useToast();
     const [connections, setConnections] = useState(initialConnectionsState);
+    const [addressPreview, setAddressPreview] = useState('');
 
     useEffect(() => {
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
-            // Ensure we have a default for mapbox if it's missing from old storage
             setConnections({ ...initialConnectionsState, ...parsed, mapbox: { ...initialConnectionsState.mapbox, ...parsed.mapbox }});
         }
     }, []);
@@ -60,10 +60,15 @@ function ConnectionsPage() {
     
     const handleAddressSelect = (address: any) => {
         console.log("Address selected in connections test:", address);
-        toast({
-            title: "Address Selected",
-            description: `Test successful: ${address.fullName}`,
-        });
+        if (address.fullName) {
+            setAddressPreview(address.fullName);
+            toast({
+                title: "Address Selected",
+                description: `Test successful: ${address.fullName}`,
+            });
+        } else {
+            setAddressPreview('');
+        }
     }
 
     return (
@@ -103,11 +108,16 @@ function ConnectionsPage() {
                         {connections.mapbox.enabled && (
                             <div className="border-t pt-4">
                                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Live Preview</h3>
-                                <div className="p-4 border rounded-md">
+                                <div className="p-4 border rounded-md space-y-4">
                                     <AddressSearch 
                                         apiKey={connections.mapbox.apiKey}
                                         onAddressSelect={handleAddressSelect}
                                     />
+                                    {addressPreview && (
+                                        <div className="text-sm text-muted-foreground bg-secondary p-2 rounded-md">
+                                            <span className="font-semibold">Selected:</span> {addressPreview}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

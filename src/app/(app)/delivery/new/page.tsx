@@ -50,14 +50,14 @@ function NewDeliveryOrderPage() {
     }
     
     const handleAddressSelect = (selected: any) => {
-        setAddress({
-            ...address, // Keep flatNumber if user entered it manually
+        setAddress(prev => ({
+            ...prev,
             houseNumber: selected.houseNumber || '',
             roadName: selected.roadName || '',
             city: selected.city || '',
             postcode: selected.postcode || '',
-            country: 'United Kingdom',
-        });
+            country: selected.country || 'United Kingdom',
+        }));
     };
 
     const handleCreateOrder = () => {
@@ -127,7 +127,7 @@ function NewDeliveryOrderPage() {
                                 </div>
                              )}
 
-                            {!isLoadingConfig && mapboxConfig?.enabled && mapboxConfig.apiKey && (
+                            {!isLoadingConfig && mapboxConfig?.enabled && (
                                 <div className="space-y-2">
                                     <Label>Find Address</Label>
                                     <AddressSearch apiKey={mapboxConfig.apiKey} onAddressSelect={handleAddressSelect} />

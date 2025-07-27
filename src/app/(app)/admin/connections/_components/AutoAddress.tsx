@@ -32,17 +32,13 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
         // --- SCRIPT AND STYLESHEET LOADING ---
         const loadScript = (id: string, src: string, onLoad: () => void) => {
             if (document.getElementById(id)) {
-                 if (window.mapboxgl && window.MapboxGeocoder) {
-                    onLoad();
-                } else {
-                    // Poll until the libraries are available
-                    const interval = setInterval(() => {
-                        if (window.mapboxgl && window.MapboxGeocoder) {
-                            clearInterval(interval);
-                            onLoad();
-                        }
-                    }, 100);
-                }
+                 // If script tag exists, poll for the window objects to be ready
+                 const interval = setInterval(() => {
+                    if (window.mapboxgl && window.MapboxGeocoder) {
+                        clearInterval(interval);
+                        onLoad();
+                    }
+                }, 100);
                 return;
             }
             const script = document.createElement('script');
@@ -111,7 +107,7 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                         }
 
                         // Handle cases where road name might include the house number
-                        if (roadName.includes(houseNumber)) {
+                        if (houseNumber && roadName.includes(houseNumber)) {
                            roadName = roadName.replace(houseNumber, '').trim().replace(/^,/, '').trim();
                         }
                         
