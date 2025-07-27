@@ -35,8 +35,13 @@ interface AddressSearchProps {
 
 const parseAddress = (feature: MapboxFeature): AddressDetails => {
     const addressLine1 = feature.text || '';
-    const postcode = feature.context?.find(c => c.id.startsWith('postcode'))?.text || '';
+    let postcode = feature.context?.find(c => c.id.startsWith('postcode'))?.text || '';
     const city = feature.context?.find(c => c.id.startsWith('place'))?.text || '';
+    
+    // Sometimes the postcode is in the main text for specific address results
+    if (!postcode && feature.place_name.match(/([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/)) {
+        postcode = feature.place_name.match(/([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/)?.[0] || '';
+    }
 
     return {
         fullName: feature.place_name,

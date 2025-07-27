@@ -12,8 +12,7 @@ import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddressSearch, AddressDetails } from "./_components/AddressSearch";
-import { Map, MapPin } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { MapPin } from "lucide-react";
 
 
 function NewDeliveryOrderPage() {
@@ -45,9 +44,11 @@ function NewDeliveryOrderPage() {
         setAddressLine1(details.addressLine1);
         setCity(details.city);
         setPostcode(details.postcode);
-        // If the name has a building name or number prefix, use it for the customer name if empty
-        if(!customerName && isNaN(parseInt(details.addressLine1.charAt(0)))) {
-             setCustomerName(details.addressLine1.split(' ')[0]);
+        
+        // Attempt to extract a building/business name if the address is not a street number
+        const nameCandidate = details.addressLine1.split(',')[0].trim();
+        if(!customerName && isNaN(parseInt(nameCandidate.charAt(0), 10))) {
+             setCustomerName(nameCandidate);
         }
     };
 
