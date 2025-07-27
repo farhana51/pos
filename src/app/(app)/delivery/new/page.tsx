@@ -20,8 +20,9 @@ function NewDeliveryOrderPage() {
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [address, setAddress] = useState({
-        line1: '',
-        line2: '',
+        houseNumber: '',
+        flatNumber: '',
+        roadName: '',
         city: '',
         postcode: '',
         country: 'United Kingdom',
@@ -33,7 +34,7 @@ function NewDeliveryOrderPage() {
     }
 
     const handleCreateOrder = () => {
-        if (!customerName || !phoneNumber || !address.line1 || !address.city || !address.postcode) {
+        if (!customerName || !phoneNumber || !address.houseNumber || !address.roadName || !address.city || !address.postcode) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
@@ -42,7 +43,7 @@ function NewDeliveryOrderPage() {
             return;
         }
         
-        const fullAddress = [address.line1, address.line2, address.city, address.postcode, address.country].filter(Boolean).join(', ');
+        const fullAddress = [address.houseNumber, address.flatNumber, address.roadName, address.city, address.postcode, address.country].filter(Boolean).join(', ');
         
         const params = new URLSearchParams({
             customerName: customerName,
@@ -53,7 +54,7 @@ function NewDeliveryOrderPage() {
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
     
-    const isReadyForOrder = !!customerName && !!phoneNumber && !!address.line1 && !!address.city && !!address.postcode;
+    const isReadyForOrder = !!customerName && !!phoneNumber && !!address.houseNumber && !!address.roadName && !!address.city && !!address.postcode;
 
     return (
         <>
@@ -92,25 +93,38 @@ function NewDeliveryOrderPage() {
                         </div>
 
                         <div className="space-y-4 border-t-2 border-black pt-6">
-                             <div className="space-y-2">
-                                <Label htmlFor="address-line1">Address Line 1</Label>
-                                <Input 
-                                    id="address-line1"
-                                    name="line1"
-                                    placeholder="e.g. 123 High Street"
-                                    value={address.line1}
-                                    onChange={handleAddressChange}
-                                    required
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="house-number">House No. / Name</Label>
+                                    <Input 
+                                        id="house-number"
+                                        name="houseNumber"
+                                        placeholder="e.g. 123"
+                                        value={address.houseNumber}
+                                        onChange={handleAddressChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="flat-number">Flat No. (Optional)</Label>
+                                    <Input 
+                                        id="flat-number"
+                                        name="flatNumber"
+                                        placeholder="e.g. Apartment 4B"
+                                        value={address.flatNumber}
+                                        onChange={handleAddressChange}
+                                    />
+                                </div>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="address-line2">Address Line 2 (Optional)</Label>
+                                <Label htmlFor="road-name">Road Name</Label>
                                 <Input 
-                                    id="address-line2"
-                                    name="line2"
-                                    placeholder="e.g. Apartment 4B"
-                                    value={address.line2}
+                                    id="road-name"
+                                    name="roadName"
+                                    placeholder="e.g. High Street"
+                                    value={address.roadName}
                                     onChange={handleAddressChange}
+                                    required
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
