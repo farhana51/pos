@@ -40,7 +40,17 @@ function ConnectionsPage() {
     useEffect(() => {
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
-            setConnections(JSON.parse(savedConnections));
+            const parsedSaved = JSON.parse(savedConnections);
+            // Deep merge to prevent crashes if saved data is outdated
+            setConnections(prev => ({
+                ...initialConnectionsState,
+                ...Object.keys(prev).reduce((acc, key) => {
+                    if (parsedSaved[key]) {
+                        acc[key as keyof typeof initialConnectionsState] = { ...prev[key as keyof typeof initialConnectionsState], ...parsedSaved[key] };
+                    }
+                    return acc;
+                }, {} as typeof initialConnectionsState)
+            }));
         }
     }, []);
 
