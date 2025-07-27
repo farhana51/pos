@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,6 @@ import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { useDebounce } from "@/hooks/use-debounce";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
@@ -28,59 +25,6 @@ function NewDeliveryOrderPage() {
     const [houseNumber, setHouseNumber] = useState('');
     const [street, setStreet] = useState('');
     const [city, setCity] = useState('');
-    
-    // Postcodes.io State
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [apiError, setApiError] = useState('');
-    const debouncedPostcode = useDebounce(postcode, 300);
-
-    const fetchSuggestions = useCallback(async (query: string) => {
-        if (query.length < 2) {
-            setSuggestions([]);
-            return;
-        }
-        try {
-            const response = await fetch(`https://api.postcodes.io/postcodes/${query}/autocomplete`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
-            if (data.status === 200 && data.result) {
-                setSuggestions(data.result);
-                setApiError('');
-            } else {
-                setSuggestions([]);
-            }
-        } catch (err) {
-            console.error('Autocomplete API error:', err);
-            setSuggestions([]);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchSuggestions(debouncedPostcode);
-    }, [debouncedPostcode, fetchSuggestions]);
-    
-    const lookupPostcode = async (pc: string) => {
-        try {
-            setApiError('');
-            const response = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
-            const data = await response.json();
-            if (data.status === 200) {
-                setCity(data.result.admin_district || data.result.region || '');
-            } else {
-                setApiError(data.error || 'Invalid postcode.');
-                setCity('');
-            }
-        } catch (err) {
-            console.error('Lookup API error:', err);
-            setApiError('Failed to fetch postcode details.');
-        }
-    };
-
-    const handleSuggestionClick = (pc: string) => {
-        setPostcode(pc);
-        setSuggestions([]);
-        lookupPostcode(pc);
-    };
 
     const handleCreateOrder = () => {
         if (!customerName || !phoneNumber || !postcode || !street || !houseNumber || !city) {
@@ -142,26 +86,6 @@ function NewDeliveryOrderPage() {
                         </div>
 
                         <div className="space-y-4 border-t pt-6">
-                            <div className="relative space-y-2">
-                                <Label htmlFor="postcode">Postcode</Label>
-                                <Input
-                                    id="postcode"
-                                    placeholder="Start typing a UK postcode..."
-                                    value={postcode}
-                                    onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-                                    onBlur={() => lookupPostcode(postcode)}
-                                />
-                                {suggestions.length > 0 && (
-                                    <ul className="absolute z-10 w-full bg-background border rounded-md mt-1 max-h-48 overflow-y-auto">
-                                        {suggestions.map(pc => (
-                                            <li key={pc} onClick={() => handleSuggestionClick(pc)} className="p-2 cursor-pointer hover:bg-accent">
-                                                {pc}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                            
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="house-number">House Name/Number</Label>
@@ -182,18 +106,27 @@ function NewDeliveryOrderPage() {
                                     />
                                 </div>
                             </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="city">City/Town</Label>
-                                <Input
-                                    id="city"
-                                    placeholder="e.g. London"
-                                    value={city}
-                                    onChange={(e) => setCity(e.target.value)}
-                                />
-                            </div>
 
-                             {apiError && <p className="text-sm text-destructive">{apiError}</p>}
+                             <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="city">City/Town</Label>
+                                    <Input
+                                        id="city"
+                                        placeholder="e.g. London"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="postcode">Postcode</Label>
+                                    <Input
+                                        id="postcode"
+                                        placeholder="e.g. SW1A 2AA"
+                                        value={postcode}
+                                        onChange={(e) => setPostcode(e.target.value.toUpperCase())}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                     <CardFooter>

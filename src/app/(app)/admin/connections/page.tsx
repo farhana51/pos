@@ -19,10 +19,6 @@ const initialConnectionsState = {
         apiKey: '',
         apiUrl: ''
     },
-    mapboxDeliveryZone: {
-        enabled: false,
-        apiKey: ''
-    },
     thirdPartyOrder: {
         enabled: false,
         apiUrl: ''
@@ -106,33 +102,6 @@ function ConnectionsPage() {
                                 value={connections.orderWeb.apiUrl}
                                 onChange={(e) => handleInputChange('orderWeb', 'apiUrl', e.target.value)}
                                 disabled={!connections.orderWeb.enabled}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="font-headline">Mapbox Delivery Zone API</CardTitle>
-                                <CardDescription>For validating if an address falls within a delivery zone.</CardDescription>
-                            </div>
-                            <Switch
-                                checked={connections.mapboxDeliveryZone.enabled}
-                                onCheckedChange={(val) => handleInputChange('mapboxDeliveryZone', 'enabled', val)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="mapbox-delivery-apikey">Secret Access Token (sk...)</Label>
-                            <Input
-                                id="mapbox-delivery-apikey"
-                                placeholder="sk.ey..."
-                                value={connections.mapboxDeliveryZone.apiKey}
-                                onChange={(e) => handleInputChange('mapboxDeliveryZone', 'apiKey', e.target.value)}
-                                disabled={!connections.mapboxDeliveryZone.enabled}
                             />
                         </div>
                     </CardContent>
