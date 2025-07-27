@@ -11,53 +11,20 @@ import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { AddressSearch, AddressDetails } from "./_components/AddressSearch";
-import { MapPin } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const [mapboxConfig, setMapboxConfig] = useState<{enabled: boolean, apiKey: string} | null>(null);
-    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-
     // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(null);
-    const [addressLine1, setAddressLine1] = useState('');
-    const [city, setCity] = useState('');
-    const [postcode, setPostcode] = useState('');
-
-    useEffect(() => {
-        const savedConnections = localStorage.getItem('apiConnections');
-        if (savedConnections) {
-            const parsed = JSON.parse(savedConnections);
-            setMapboxConfig(parsed.mapboxAutocomplete || { enabled: false, apiKey: '' });
-        } else {
-             setMapboxConfig({ enabled: false, apiKey: '' });
-        }
-        setIsLoadingConfig(false);
-    }, []);
-
-    const handleAddressSelect = (details: AddressDetails) => {
-        setSelectedAddress(details);
-        setAddressLine1(details.addressLine1);
-        setCity(details.city);
-        setPostcode(details.postcode);
-        
-        // Attempt to extract a building/business name if the address is not a street number
-        const nameCandidate = details.addressLine1.split(',')[0].trim();
-        if(!customerName && isNaN(parseInt(nameCandidate.charAt(0), 10))) {
-             setCustomerName(nameCandidate);
-        }
-    };
-
+    const [address, setAddress] = useState('');
 
     const handleCreateOrder = () => {
-        if (!customerName || !phoneNumber || !addressLine1 || !city || !postcode) {
+        if (!customerName || !phoneNumber || !address) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
@@ -66,18 +33,16 @@ function NewDeliveryOrderPage() {
             return;
         }
         
-        const fullAddress = `${addressLine1}, ${city}, ${postcode}`;
-
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: fullAddress,
+            address: address,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
     };
     
-    const isReadyForOrder = !!customerName && !!phoneNumber && !!addressLine1 && !!city && !!postcode;
+    const isReadyForOrder = !!customerName && !!phoneNumber && !!address;
 
     return (
         <>
@@ -87,7 +52,7 @@ function NewDeliveryOrderPage() {
                     <CardHeader>
                         <CardTitle>Customer & Delivery Details</CardTitle>
                         <CardDescription>
-                            Enter the customer's information and find their address.
+                            Enter the customer's information and delivery address.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -115,60 +80,17 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 border-t pt-6">
-                            <Label>Delivery Address Search</Label>
-                            {isLoadingConfig ? (
-                                <Skeleton className="h-10 w-full" />
-                            ) : (
-                                <AddressSearch onAddressSelect={handleAddressSelect} config={mapboxConfig} />
-                            )}
+                        <div className="space-y-2 border-t pt-6">
+                            <Label htmlFor="address">Delivery Address</Label>
+                            <Textarea
+                                id="address"
+                                placeholder="Enter the full address, including postcode"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                required
+                                rows={4}
+                            />
                         </div>
-                        
-                        {selectedAddress && (
-                             <Card className="bg-muted/50">
-                                <CardHeader>
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                        <MapPin className="text-primary"/>
-                                        Selected Address
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                     <div className="space-y-2">
-                                        <Label htmlFor="address-line-1">Address Line 1</Label>
-                                        <Input 
-                                            id="address-line-1" 
-                                            placeholder="House number and street"
-                                            value={addressLine1}
-                                            onChange={(e) => setAddressLine1(e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="city">City/Town</Label>
-                                            <Input 
-                                                id="city" 
-                                                placeholder="e.g. London"
-                                                value={city}
-                                                onChange={(e) => setCity(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="postcode">Postcode</Label>
-                                            <Input 
-                                                id="postcode" 
-                                                placeholder="e.g. SW1A 1AA"
-                                                value={postcode}
-                                                onChange={(e) => setPostcode(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground pt-2">Full address: {selectedAddress.fullName}</p>
-                                </CardContent>
-                            </Card>
-                        )}
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={handleCreateOrder} disabled={!isReadyForOrder}>

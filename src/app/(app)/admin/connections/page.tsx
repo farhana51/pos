@@ -11,47 +11,37 @@ import withAuth from "@/components/withAuth";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
+import { Info } from "lucide-react";
 
+// Represents the initial state of all possible connections.
+// When adding a new service, define its default state here.
 const initialConnectionsState = {
-    mapboxAutocomplete: {
-        enabled: false,
-        apiKey: '',
-    },
+    // Example for a future connection:
+    // someOtherService: {
+    //     enabled: false,
+    //     apiKey: '',
+    // },
 }
 
 function ConnectionsPage() {
     const { toast } = useToast();
-    const [connections, setConnections] = useState(initialConnectionsState);
+    // Since mapbox is removed, the connections state is now empty.
+    const [connections, setConnections] = useState<typeof initialConnectionsState>({});
 
     useEffect(() => {
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
-            const parsedSaved = JSON.parse(savedConnections);
-            // Deep merge to prevent crashes if saved data is outdated
-            setConnections(prev => {
-                const newState = { ...initialConnectionsState };
-                if (parsedSaved.mapboxAutocomplete) {
-                    newState.mapboxAutocomplete = { ...newState.mapboxAutocomplete, ...parsedSaved.mapboxAutocomplete };
-                }
-                return newState;
-            });
+             // We'll keep this to handle potential future connections,
+             // but it won't do anything for now.
+            setConnections(JSON.parse(savedConnections));
         }
     }, []);
 
-    const handleInputChange = (service: keyof typeof connections, field: string, value: string | boolean) => {
-        setConnections(prev => ({
-            ...prev,
-            [service]: {
-                ...prev[service],
-                [field]: value
-            }
-        }));
-    }
-
     const handleSaveChanges = () => {
+        // This will save any future connections added.
         localStorage.setItem('apiConnections', JSON.stringify(connections));
         toast({
-            title: "Connections Saved",
+            title: "Settings Saved",
             description: "Your API connection settings have been saved.",
         });
     }
@@ -64,28 +54,13 @@ function ConnectionsPage() {
             <main className="p-4 sm:p-6 lg:p-8 space-y-8">
                  <Card>
                     <CardHeader>
-                         <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="font-headline">Mapbox Address Autocomplete</CardTitle>
-                                <CardDescription>Find and autocomplete delivery addresses.</CardDescription>
-                            </div>
-                            <Switch
-                                checked={connections.mapboxAutocomplete.enabled}
-                                onCheckedChange={(val) => handleInputChange('mapboxAutocomplete', 'enabled', val)}
-                            />
-                        </div>
+                        <CardTitle className="font-headline">Available Connections</CardTitle>
+                        <CardDescription>Configure third-party API integrations for your application.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="mapbox-key">Mapbox Public Access Token</Label>
-                            <Input
-                                id="mapbox-key"
-                                placeholder="pk.ey..."
-                                value={connections.mapboxAutocomplete.apiKey}
-                                onChange={(e) => handleInputChange('mapboxAutocomplete', 'apiKey', e.target.value)}
-                                disabled={!connections.mapboxAutocomplete.enabled}
-                            />
-                        </div>
+                    <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-48">
+                        <Info className="w-12 h-12 mb-4" />
+                        <p>There are no API connections to configure at this time.</p>
+                        <p className="text-sm">Future integrations will appear here.</p>
                     </CardContent>
                 </Card>
             </main>
