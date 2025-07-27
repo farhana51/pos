@@ -34,24 +34,28 @@ function NewDeliveryOrderPage() {
     // Mapbox Geocoder State
     const geocoderContainerRef = useRef<HTMLDivElement>(null);
     const geocoderRef = useRef<any>(null); // To hold the geocoder instance
-    const [mapboxApiKey, setMapboxApiKey] = useState<string | null>(null);
     const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Load settings from localStorage
+
+    // This single useEffect handles both loading settings and initializing the geocoder
     useEffect(() => {
+        let isEnabled = false;
+        let apiKey: string | null = null;
+        
         const savedConnections = localStorage.getItem('apiConnections');
         if (savedConnections) {
             const parsed = JSON.parse(savedConnections);
-            if(parsed.mapboxAutocomplete) {
-                 setIsAutocompleteEnabled(parsed.mapboxAutocomplete.enabled);
-                 setMapboxApiKey(parsed.mapboxAutocomplete.apiKey);
+            if (parsed.mapboxAutocomplete) {
+                isEnabled = parsed.mapboxAutocomplete.enabled;
+                apiKey = parsed.mapboxAutocomplete.apiKey;
             }
         }
-    }, []);
+        
+        setIsAutocompleteEnabled(isEnabled);
+        setIsLoading(false);
 
-    // Initialize Mapbox Geocoder
-    useEffect(() => {
-        if (!isAutocompleteEnabled || !mapboxApiKey || !geocoderContainerRef.current) {
+        if (!isEnabled || !apiKey || !geocoderContainerRef.current) {
             return;
         }
 
@@ -77,11 +81,11 @@ function NewDeliveryOrderPage() {
                 if (geocoderRef.current || !geocoderContainerRef.current) return;
                 
                 // @ts-ignore
-                window.mapboxgl.accessToken = mapboxApiKey;
+                window.mapboxgl.accessToken = apiKey;
                 
                 // @ts-ignore
                 const geocoder = new window.MapboxGeocoder({
-                    accessToken: mapboxApiKey,
+                    accessToken: apiKey,
                     marker: false,
                     placeholder: 'Type a UK postcode and house number',
                     countries: 'GB',
@@ -119,7 +123,7 @@ function NewDeliveryOrderPage() {
              }
         };
 
-    }, [isAutocompleteEnabled, mapboxApiKey]);
+    }, []);
 
 
     const handleCreateOrder = () => {
@@ -183,7 +187,7 @@ function NewDeliveryOrderPage() {
 
                         <div className="space-y-4 border-t pt-6">
                             <Label>Delivery Address Search</Label>
-                             {isAutocompleteEnabled && mapboxApiKey ? (
+                             {!isLoading && isAutocompleteEnabled ? (
                                 <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder]:max-w-none" />
                             ) : (
                                 <Alert>
