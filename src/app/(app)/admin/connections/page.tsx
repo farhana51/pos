@@ -59,7 +59,6 @@ function ConnectionsPage() {
     }
     
     const handleAddressSelect = (address: any) => {
-        console.log("Address selected in connections test:", address);
         if (address.fullName) {
             setAddressPreview(address.fullName);
             toast({

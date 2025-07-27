@@ -89,16 +89,6 @@ export function AppSidebar() {
     return pathname.startsWith(path)
   }
 
-  const handleRoleChange = (role: UserRole) => {
-    setUserRole(role);
-    // Create a new object to force re-render
-    const newUser = { ...mockUser, role };
-    setCurrentUser(newUser);
-    if(typeof window !== 'undefined'){
-      window.dispatchEvent(new Event('storage'));
-    }
-  }
-
   const handleLogout = () => {
     logoutUser();
     router.push('/login');
@@ -160,19 +150,6 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="flex flex-col gap-2 p-2">
-            <div className="group-data-[collapsible=icon]:hidden">
-                <label className="text-xs text-muted-foreground">Role Switcher (for demo)</label>
-                 <Select onValueChange={handleRoleChange} value={currentUser.role}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                        <SelectItem value="Basic">Basic</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
             <div className="flex items-center gap-3">
                 <div className="flex items-center gap-3 flex-1">
                     <Avatar>

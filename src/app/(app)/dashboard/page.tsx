@@ -301,7 +301,7 @@ function ManageFloorsDialog({ isOpen, setIsOpen, floors, onAddFloor, onRemoveFlo
                                     {floors.length > 1 && (
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive">
+                                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive shrink-0">
                                                 <Trash2 />
                                             </Button>
                                         </AlertDialogTrigger>
@@ -470,7 +470,6 @@ export default function DashboardPage() {
 
   const handleSaveLayout = () => {
     // In a real app, this would send the 'tables' state to a backend API
-    console.log("Saving new layout:", tables.map(t => ({id: t.id, x: t.x, y: t.y, floor: t.floor})));
      toast({ title: "Layout Saved", description: "The new table positions have been saved." });
   }
 

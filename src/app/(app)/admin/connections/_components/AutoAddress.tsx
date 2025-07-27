@@ -47,7 +47,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
             script.async = true;
             script.onload = onLoad;
             script.onerror = () => {
-                console.error(`Failed to load script: ${src}`);
                 setLoadStatus('error');
             };
             document.body.appendChild(script);
@@ -69,7 +68,6 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                     if (geocoderRef.current) return;
                     
                     if (!window.mapboxgl || !window.MapboxGeocoder) {
-                        console.error("Mapbox libraries not available on the window object.");
                         setLoadStatus('error');
                         return;
                     }
@@ -134,13 +132,11 @@ const AddressSearch = ({ apiKey, onAddressSelect }: AddressSearchProps) => {
                     });
                     
                     geocoder.on('error', (e: any) => {
-                        console.error('A Geocoder error occurred:', e.error || 'Empty error object. Check API Key restrictions.');
                         setLoadStatus('error');
                     });
                 });
             });
         } catch (err) {
-            console.error("An unexpected error occurred during setup:", err);
             setLoadStatus('error');
         }
 
