@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,33 +10,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import withAuth from "@/components/withAuth";
 import { UserRole } from "@/lib/types";
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
+import { getMapboxSuggestions, MapboxSuggestion } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 
-interface MapboxAddress {
-    fullName: string;
-    addressLine1: string;
-    postcode: string;
-    city: string;
-    region: string;
-    country: string;
-    coordinates: [number, number];
-}
 
 function NewDeliveryOrderPage() {
     const router = useRouter();
     const { toast } = useToast();
-
-    // Refs for geocoder integration
-    const geocoderContainerRef = useRef<HTMLDivElement>(null);
-    const geocoderRef = useRef<any>(null); // Use any to avoid Mapbox type issues
-
-    // State for delivery details
+    
+    // Form State
     const [customerName, setCustomerName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [selectedAddress, setSelectedAddress] = useState<MapboxAddress | null>(null);
+    const [addressQuery, setAddressQuery] = useState('');
     
+    // Address Search State
+    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
+    const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+
+    // API Key State
     const [apiKey, setApiKey] = useState<string | null>(null);
+
+    const debouncedQuery = useDebounce(addressQuery, 300);
 
     // Fetch Mapbox API Key from localStorage
     useEffect(() => {
@@ -49,83 +46,28 @@ function NewDeliveryOrderPage() {
         }
     }, []);
 
+    // Fetch suggestions when debounced query changes
     useEffect(() => {
-        if (!apiKey) {
-            toast({
-                variant: "destructive",
-                title: "Mapbox Not Configured",
-                description: "Please set your Mapbox API key in Admin > Connections to enable delivery.",
-            })
-            return;
-        };
-
-        // --- SCRIPT AND STYLESHEET LOADING ---
-        const geocoderCss = document.createElement('link');
-        geocoderCss.rel = 'stylesheet';
-        geocoderCss.href = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css';
-        geocoderCss.type = 'text/css';
-        document.head.appendChild(geocoderCss);
-
-        const mapboxScript = document.createElement('script');
-        mapboxScript.src = 'https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js';
-        mapboxScript.async = true;
-        document.body.appendChild(mapboxScript);
-
-        mapboxScript.onload = () => {
-            const geocoderScript = document.createElement('script');
-            geocoderScript.src = 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js';
-            geocoderScript.async = true;
-            document.body.appendChild(geocoderScript);
-
-            geocoderScript.onload = () => {
-                if (geocoderRef.current) return;
-
-                (window as any).mapboxgl.accessToken = apiKey;
-
-                const geocoder = new (window as any).MapboxGeocoder({
-                    accessToken: (window as any).mapboxgl.accessToken,
-                    marker: false,
-                    placeholder: 'Enter UK Postcode or Address',
-                    countries: 'GB',
-                    types: 'address,postcode,place'
-                });
-                
-                if (geocoderContainerRef.current) {
-                    // Clear previous instances if any
-                    while (geocoderContainerRef.current.firstChild) {
-                        geocoderContainerRef.current.removeChild(geocoderContainerRef.current.firstChild);
-                    }
-                    geocoderContainerRef.current.appendChild(geocoder.onAdd());
-                }
-
-                geocoderRef.current = geocoder;
-
-                geocoder.on('result', (e: any) => {
-                    const result = e.result;
-                    const addressDetails: MapboxAddress = {
-                        fullName: result.place_name,
-                        addressLine1: result.text,
-                        postcode: result.context?.find((c: any) => c.id.startsWith('postcode'))?.text || '',
-                        city: result.context?.find((c: any) => c.id.startsWith('place'))?.text || '',
-                        region: result.context?.find((c: any) => c.id.startsWith('region'))?.text || '',
-                        country: result.context?.find((c: any) => c.id.startsWith('country'))?.text || '',
-                        coordinates: result.geometry.coordinates,
-                    };
-                    setSelectedAddress(addressDetails);
-                    geocoder.clear(); // Clear input after selection
-                });
+        if (debouncedQuery.length > 2 && apiKey) {
+            const fetchSuggestions = async () => {
+                const results = await getMapboxSuggestions(debouncedQuery, apiKey);
+                setSuggestions(results);
+                setIsSuggestionsOpen(results.length > 0);
             };
-        };
+            fetchSuggestions();
+        } else {
+            setSuggestions([]);
+            setIsSuggestionsOpen(false);
+        }
+    }, [debouncedQuery, apiKey]);
 
-        // Clean up on unmount
-        return () => {
-            document.head.removeChild(geocoderCss);
-             if (mapboxScript.parentNode) {
-                document.body.removeChild(mapboxScript);
-            }
-        };
-    }, [apiKey, toast]); 
-
+    const handleSelectAddress = (suggestion: MapboxSuggestion) => {
+        setSelectedAddress(suggestion.place_name);
+        setAddressQuery(suggestion.place_name);
+        setSuggestions([]);
+        setIsSuggestionsOpen(false);
+    }
+    
     const handleCreateOrder = () => {
         if (!selectedAddress || !customerName || !phoneNumber) {
             toast({
@@ -139,7 +81,7 @@ function NewDeliveryOrderPage() {
         const params = new URLSearchParams({
             customerName: customerName,
             phone: phoneNumber,
-            address: selectedAddress.fullName,
+            address: selectedAddress,
         });
         
         router.push(`/orders/new?type=Delivery&${params.toString()}`);
@@ -181,21 +123,38 @@ function NewDeliveryOrderPage() {
                             </div>
                         </div>
 
-                        <Separator />
-
-                        <div className="space-y-4">
-                             <div className="space-y-2">
-                                <Label>Find Address</Label>
-                                <div ref={geocoderContainerRef} className="[&_.mapboxgl-ctrl-geocoder]:w-full [&_.mapboxgl-ctrl-geocoder--input]:h-10" />
-                            </div>
-                            
-                             {selectedAddress && (
-                                <div className="p-4 rounded-md border bg-muted text-sm space-y-1">
-                                    <p><span className="font-semibold">Selected:</span> {selectedAddress.fullName}</p>
-                                </div>
-                             )}
+                        <div className="space-y-2">
+                            <Label htmlFor="address-search">Find Address</Label>
+                             <Popover open={isSuggestionsOpen} onOpenChange={setIsSuggestionsOpen}>
+                                <PopoverAnchor asChild>
+                                    <Input 
+                                        id="address-search"
+                                        placeholder="Start typing a UK address or postcode..."
+                                        value={addressQuery}
+                                        onChange={(e) => {
+                                            setAddressQuery(e.target.value);
+                                            if(selectedAddress) setSelectedAddress(null); // Clear selection if user types again
+                                        }}
+                                        disabled={!apiKey}
+                                        autoComplete="off"
+                                    />
+                                </PopoverAnchor>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    {suggestions.map((suggestion) => (
+                                        <div
+                                            key={suggestion.id}
+                                            className="p-2 hover:bg-accent cursor-pointer"
+                                            onClick={() => handleSelectAddress(suggestion)}
+                                        >
+                                            {suggestion.place_name}
+                                        </div>
+                                    ))}
+                                </PopoverContent>
+                            </Popover>
+                            {!apiKey && (
+                                <p className="text-xs text-destructive">Mapbox integration is not configured. Please add an API key in Admin &gt; Connections.</p>
+                            )}
                         </div>
-                       
                     </CardContent>
                     <CardFooter>
                         <Button className="w-full" onClick={handleCreateOrder} disabled={!selectedAddress || !customerName || !phoneNumber}>

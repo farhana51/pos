@@ -1,6 +1,36 @@
 
 
 // A central place for all third-party API interactions.
+export interface MapboxSuggestion {
+    id: string;
+    place_name: string;
+    // Add other properties from the Mapbox API response as needed
+}
+
+
+export const getMapboxSuggestions = async (query: string, accessToken: string): Promise<MapboxSuggestion[]> => {
+    if (query.length < 3) return [];
+
+    const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`;
+    const params = new URLSearchParams({
+        access_token: accessToken,
+        country: 'GB',
+        types: 'address,postcode,place',
+        autocomplete: 'true',
+        limit: '5',
+    });
+
+    try {
+        const response = await fetch(`${endpoint}?${params}`);
+        if (!response.ok) throw new Error('Failed to fetch from Mapbox');
+        const data = await response.json();
+        return data.features || [];
+    } catch (error) {
+        console.error('Error fetching Mapbox suggestions:', error);
+        return [];
+    }
+}
+
 
 // --- Placeholder functions for other integrations ---
 
@@ -28,5 +58,3 @@ export const sendTo3rdPartyOrderSystem = async (config: { apiUrl: string }, orde
     // e.g., await fetch(config.apiUrl, { method: 'POST', body: JSON.stringify(order), headers: { 'Content-Type': 'application/json' } });
     return { success: true };
 }
-
-    
