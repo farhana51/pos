@@ -22,6 +22,14 @@ const initialConnectionsState = {
     thirdPartyOrder: {
         enabled: false,
         apiUrl: ''
+    },
+    mapboxAutocomplete: {
+        enabled: false,
+        apiKey: '',
+    },
+    mapboxDeliveryZone: {
+        enabled: false,
+        apiKey: '',
     }
 }
 
@@ -34,15 +42,16 @@ function ConnectionsPage() {
         if (savedConnections) {
             const parsedSaved = JSON.parse(savedConnections);
             // Deep merge to prevent crashes if saved data is outdated
-            setConnections(prev => ({
-                ...initialConnectionsState,
-                ...Object.keys(prev).reduce((acc, key) => {
-                    if (parsedSaved[key]) {
-                        acc[key as keyof typeof initialConnectionsState] = { ...prev[key as keyof typeof initialConnectionsState], ...parsedSaved[key] };
+            setConnections(prev => {
+                const newState = { ...initialConnectionsState };
+                for (const key in newState) {
+                    const typedKey = key as keyof typeof initialConnectionsState;
+                    if (parsedSaved[typedKey]) {
+                        newState[typedKey] = { ...newState[typedKey], ...parsedSaved[typedKey] };
                     }
-                    return acc;
-                }, {} as typeof initialConnectionsState)
-            }));
+                }
+                return newState;
+            });
         }
     }, []);
 
@@ -70,6 +79,61 @@ function ConnectionsPage() {
                 <Button onClick={handleSaveChanges}>Save Changes</Button>
             </PageHeader>
             <main className="p-4 sm:p-6 lg:p-8 space-y-8">
+                 <Card>
+                    <CardHeader>
+                         <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="font-headline">Mapbox Address Autocomplete</CardTitle>
+                                <CardDescription>Find and autocomplete delivery addresses.</CardDescription>
+                            </div>
+                            <Switch
+                                checked={connections.mapboxAutocomplete.enabled}
+                                onCheckedChange={(val) => handleInputChange('mapboxAutocomplete', 'enabled', val)}
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mapbox-key">Mapbox Public Access Token</Label>
+                            <Input
+                                id="mapbox-key"
+                                placeholder="pk.ey..."
+                                value={connections.mapboxAutocomplete.apiKey}
+                                onChange={(e) => handleInputChange('mapboxAutocomplete', 'apiKey', e.target.value)}
+                                disabled={!connections.mapboxAutocomplete.enabled}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                         <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="font-headline">Mapbox Delivery Zone API</CardTitle>
+                                <CardDescription>Check if an address is within your delivery zone (Not implemented).</CardDescription>
+                            </div>
+                            <Switch
+                                checked={connections.mapboxDeliveryZone.enabled}
+                                onCheckedChange={(val) => handleInputChange('mapboxDeliveryZone', 'enabled', val)}
+                                disabled
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="mapbox-zone-key">Mapbox Secret Key</Label>
+                            <Input
+                                id="mapbox-zone-key"
+                                placeholder="sk.ey..."
+                                value={connections.mapboxDeliveryZone.apiKey}
+                                onChange={(e) => handleInputChange('mapboxDeliveryZone', 'apiKey', e.target.value)}
+                                disabled={!connections.mapboxDeliveryZone.enabled || true}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+                
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
